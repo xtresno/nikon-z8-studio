@@ -1,0 +1,45 @@
+[package]
+name = "z8"
+version = "0.1.0"
+edition = "2021"
+description = "Z8 Studio in Rust: the tether/edit/export server and the always-on webcam keeper"
+
+[[bin]]
+name = "z8-studio"
+path = "src/bin/z8-studio.rs"
+
+[[bin]]
+name = "z8-feed"
+path = "src/bin/z8-feed.rs"
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "net", "time", "sync"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+parking_lot = "0.12"
+flate2 = "1"
+fast_image_resize = "6"
+kamadak-exif = "0.6"
+ab_glyph = "0.2"
+png = "0.18"
+tiff = "0.10"
+libc = "0.2"
+chrono = "0.4"
+regex = "1"
+sha2 = "0.10"
+percent-encoding = "2"
+form_urlencoded = "1"
+rayon = "1"
+bytes = "1"
+futures-util = "0.3"
+tokio-stream = "0.1"
+
+[build-dependencies]
+cc = "1"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = false

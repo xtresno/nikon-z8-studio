@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12171e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Z8 Studio">
+<title>Z8 Studio</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body data-conn="0" data-grid="off" data-count="0" data-shooting="0" data-mode="off">
+
+<main class="stage">
+  <header class="bar">
+    <div class="brand"><span class="brand-mark"></span>Z8 Studio</div>
+    <div class="lamps">
+      <span class="lamp" id="connLamp"><i></i><span id="connTxt">Disconnected</span></span>
+      <span class="lamp lamp-plain" id="battLamp"><span id="battTxt"></span></span>
+      <span class="lamp lamp-plain" id="leverLamp" title="The camera's PHOTO/VIDEO lever. It can only be moved on the camera. Tap to re-check after moving it."><span id="leverTxt"></span></span>
+      <span class="lamp lamp-plain lamp-mode" id="modeLamp"><span id="modeTxt">Idle</span></span>
+    </div>
+    <div class="bar-right">
+      <div class="seg" role="group" aria-label="Camera mode">
+        <button id="mTether" title="Tethered stills">Tether</button>
+        <button id="mWebcam" title="Feed OBS and Zoom with the call look applied">Webcam</button>
+        <button id="mOff" title="Release the camera">Off</button>
+      </div>
+      <select id="callLook" class="call-look" aria-label="Zoom/OBS call look" aria-describedby="callLookNote" title="Updates the Zoom/OBS look live in Webcam mode. Does not change camera exposure or in-camera recordings."></select>
+      <a id="recLink" class="rec-link" href="/record" target="z8-recorder" title="Record a YouTube video: screen, Z8 camera, mic and teleprompter">&#9679; Record YouTube</a>
+      <button id="btnKeys" class="icon-btn" aria-label="Keyboard shortcuts">?</button>
+    </div>
+  </header>
+  <p id="callLookNote" class="call-note">Call looks apply in Webcam mode for Zoom/OBS. The Tether preview and camera recordings are separate.</p>
+
+  <div id="nextStep" hidden>
+    <span class="ns-dots" id="nsDots"></span>
+    <div class="ns-text">
+      <span class="ns-stage" id="nsStage"></span>
+      <span class="ns-step" id="nsStep"></span>
+      <span class="ns-why" id="nsWhy"></span>
+    </div>
+  </div>
+
+  <div class="view">
+    <img id="live" alt="" hidden>
+    <img id="still" alt="The selected frame" hidden>
+    <div id="idle">Camera released.<br>Press <b>Tether</b> above to shoot, or <b>Webcam</b> to feed OBS and Zoom.<br><br>For stills the camera must be powered on and set to <b>photo</b> mode, not video.</div>
+    <div class="guide thirds"></div>
+    <div class="guide center"></div>
+    <div id="count">3</div>
+    <div id="stageBadge" hidden></div>
+    <button id="btnLive" class="live-btn" hidden title="l">Back to live</button>
+  </div>
+
+  <div class="deck">
+    <button class="shutter" id="btnShoot">Shoot</button>
+    <button id="btnAf">Focus</button>
+    <button id="btnRec" class="rec" title="In-camera movie record, needs the camera in video mode">Record</button>
+    <span class="deck-sep"></span>
+    <div class="fld fld-inline">
+      <label for="timer">Timer</label>
+      <select id="timer"><option value="0">Off</option><option value="3">3s</option>
+        <option value="5">5s</option><option value="10">10s</option></select>
+    </div>
+    <div class="fld fld-inline">
+      <label for="burst">Frames</label>
+      <select id="burst"><option>1</option><option>3</option><option>5</option><option>10</option></select>
+    </div>
+    <label class="chk" id="afWrap"
+      title="Drive autofocus before the shutter. On by default: exposure and colour are fixable afterwards, a soft eye is not.">
+      <input type="checkbox" id="afFirst" checked><span>Focus first</span></label>
+    <div class="deck-view">
+      <button id="btnRot" title="Turn the live view 90 degrees. Frames and exports are never rotated: they follow the camera's own orientation.">Rotate <span id="rotTxt">0&deg;</span></button>
+      <button id="btnMir" aria-pressed="false">Mirror</button>
+      <button id="btnGrid">Grid: off</button>
+    </div>
+    <span id="pastWarn" class="pastwarn" hidden></span>
+  </div>
+
+  <section class="film" aria-label="Session">
+    <div class="film-head">
+      <select id="sessionPick" class="film-session" aria-label="Session day"></select>
+      <select id="filterPick" class="film-filter" aria-label="Filter">
+        <option value="all">All</option><option value="pick">Picks</option>
+        <option value="unrejected">Not rejected</option>
+      </select>
+      <span id="shotCount" class="count-pill"></span>
+      <div class="film-actions">
+        <button id="btnSelectFrames" aria-pressed="false">Select frames</button>
+        <button id="btnPick" class="flag-pick" title="p">Pick</button>
+        <button id="btnReject" class="flag-reject" title="x">Reject</button>
+        <button id="btnClearFlag" title="u">Clear</button>
+        <button id="btnRank"
+          title="Score every frame on focus, exposure and whether the eyes are lit, worst fault first. It does not change your picks.">Rank</button>
+        <button id="btnDelete" class="danger" disabled title="Move this frame to the trash, recoverable">Delete</button>
+        <button id="btnUndelete" hidden>Undo delete</button>
+      </div>
+    </div>
+    <div class="strip film-strip" id="strip"><div class="empty">No shots yet.</div></div>
+  </section>
+</main>
+
+<aside class="side">
+  <nav class="tabs" role="tablist" aria-label="Panels">
+    <button role="tab" data-tab="camera" aria-selected="true">Camera</button>
+    <button role="tab" data-tab="edit" aria-selected="false">Edit</button>
+    <button role="tab" data-tab="export" aria-selected="false">Export</button>
+    <button role="tab" data-tab="library" aria-selected="false">Library</button>
+  </nav>
+
+  <div class="panes">
+    <!-- ================= CAMERA ================= -->
+    <div class="pane" data-pane="camera" role="tabpanel" aria-label="Camera">
+      <div class="sec">
+        <h2>Camera settings</h2>
+        <div class="row">
+          <button id="btnCamDefault" class="grow"
+                  title="Put every camera setting back to your default preset">Restore default</button>
+        </div>
+        <div class="grid2" id="camSettings"><div class="empty">Connect to load settings.</div></div>
+        <div id="camNotice" class="notice" hidden></div>
+        <div id="camConfirm" class="confirm" hidden></div>
+        <p class="note" id="camActual" hidden></p>
+      </div>
+
+      <div class="sec">
+        <h2>Saved settings</h2>
+        <div class="row">
+          <select id="camPreset" class="grow" title="Saved camera settings"></select>
+          <button id="btnCamDel" class="icon-btn" title="Delete the selected preset" aria-label="Delete preset">&times;</button>
+        </div>
+        <div class="row">
+          <button id="btnCamApply" class="grow" title="Put the camera back to this preset">Restore</button>
+          <button id="btnCamSave" class="grow" title="Save the camera's current settings under a name">Save</button>
+        </div>
+        <p class="note" id="camPresetOut" hidden></p>
+      </div>
+
+      <div class="sec">
+        <h2>On a call</h2>
+        <button id="btnFixExp" class="wide" title="Take the camera back for a moment, let it meter properly, hand it straight back to the feed">Fix exposure</button>
+        <p class="note">While the Zoom feed holds the camera nothing else can
+          change a setting. This borrows it back for about six seconds.</p>
+      </div>
+
+      <div class="sec">
+        <h2>Sound</h2>
+        <div class="row">
+          <button id="btnRecAudio" class="grow" title="Record the good microphone alongside an in-camera take, to sync in the edit. Clap once at the top.">Record audio</button>
+          <button id="btnAudio" class="grow" title="Check the microphone actually reaches the computer">Check audio</button>
+        </div>
+        <p class="note">A self-tape with no usable sound is a wasted take.</p>
+      </div>
+    </div>
+
+    <!-- ================= EDIT ================= -->
+    <div class="pane" data-pane="edit" role="tabpanel" aria-label="Edit" hidden>
+      <div class="sec">
+        <h2>Histogram <span id="clipInfo" class="h2-aside"></span></h2>
+        <canvas id="hist" width="340" height="88"></canvas>
+      </div>
+
+      <div class="sec">
+        <h2>Crop <span id="cropInfo" class="h2-aside"></span></h2>
+        <div id="cropWrap"><img id="cropImg" alt="" draggable="false"><div id="cropBox" hidden>
+          <i data-h="nw"></i><i data-h="ne"></i><i data-h="sw"></i><i data-h="se"></i>
+        </div></div>
+        <div class="sld sld-tight"><div class="top">
+          <label for="straighten">Straighten</label><button type="button" class="reset-value" data-reset="straighten" id="oStraighten" aria-label="Reset straighten">0.00</button></div>
+          <input type="range" id="straighten" min="-10" max="10" step="0.1" value="0"></div>
+        <div class="row">
+          <button id="cropReset" class="grow">Full frame</button>
+          <button id="cropLock" class="grow" aria-pressed="true">Lock to preset</button>
+        </div>
+        <p class="note" id="cropShape"></p>
+        <button id="btnFocusCheck" class="wide">Check focus at 1:1</button>
+        <p class="note">Drag inside to move, corners to resize. Check focus shows the crop centre; double-click a spot for a closer look.</p>
+      </div>
+
+      <div class="sec">
+        <h2>Look</h2>
+        <div class="row">
+          <select id="lookPreset" class="grow" aria-label="Look preset"></select>
+          <button id="btnLight"
+            title="Measure the LIGHTING on this frame and say what to change. Exposure and colour are fixable here; light is not.">Light</button>
+          <button id="btnAuto" class="pri"
+            title="Measure this frame and correct it. As shot applies nothing, which is why an untouched export looks flat.">Auto</button>
+        </div>
+        <p class="note note-tight" id="autoWhy" hidden></p>
+        <div id="lightOut" hidden></div>
+        <div class="sliders">
+          <div class="sld"><div class="top"><label for="exposure">Exposure</label><button type="button" class="reset-value" data-reset="exposure" id="oExposure" aria-label="Reset exposure">1.00</button></div>
+            <input type="range" id="exposure" min="0.5" max="1.8" step="0.01" value="1"></div>
+          <div class="sld"><div class="top"><label for="shadows">Shadows</label><button type="button" class="reset-value" data-reset="shadows" id="oShadows" aria-label="Reset shadows">0.00</button></div>
+            <input type="range" id="shadows" min="-1" max="1" step="0.01" value="0"></div>
+          <div class="sld"><div class="top"><label for="highlights">Highlights</label><button type="button" class="reset-value" data-reset="highlights" id="oHighlights" aria-label="Reset highlights">0.00</button></div>
+            <input type="range" id="highlights" min="-1" max="1" step="0.01" value="0"></div>
+          <div class="sld"><div class="top"><label for="contrast">Contrast</label><button type="button" class="reset-value" data-reset="contrast" id="oContrast" aria-label="Reset contrast">1.00</button></div>
+            <input type="range" id="contrast" min="0.5" max="2" step="0.01" value="1"></div>
+          <div class="sld"><div class="top"><label for="saturation">Saturation</label><button type="button" class="reset-value" data-reset="saturation" id="oSaturation" aria-label="Reset saturation">1.00</button></div>
+            <input type="range" id="saturation" min="0" max="2" step="0.01" value="1"></div>
+          <div class="sld"><div class="top"><label for="warmth">Warmth</label><button type="button" class="reset-value" data-reset="warmth" id="oWarmth" aria-label="Reset warmth">0.00</button></div>
+            <input type="range" id="warmth" min="-0.6" max="0.6" step="0.01" value="0"></div>
+          <div class="sld"><div class="top"><label for="tint">Tint</label><button type="button" class="reset-value" data-reset="tint" id="oTint" aria-label="Reset tint">0.00</button></div>
+            <input type="range" id="tint" min="-0.6" max="0.6" step="0.01" value="0"></div>
+          <div class="sld"><div class="top"><label for="vignette">Vignette</label><button type="button" class="reset-value" data-reset="vignette" id="oVignette" aria-label="Reset vignette">0.00</button></div>
+            <input type="range" id="vignette" min="0" max="1" step="0.01" value="0"></div>
+          <div class="sld"><div class="top"><label for="sharpness">Sharpness</label><button type="button" class="reset-value" data-reset="sharpness" id="oSharpness" aria-label="Reset sharpness">1.00</button></div>
+            <input type="range" id="sharpness" min="0" max="3" step="0.05" value="1"></div>
+        </div>
+        <p class="note note-tight">Tap a value to reset that slider.</p>
+        <div class="row">
+          <button id="btnCompare" class="grow" title="Hold to see the original">Hold to compare</button>
+        </div>
+        <div class="row">
+          <input class="txt grow" id="lookName" placeholder="Name this look" aria-label="Look name">
+          <button id="btnSaveLook">Save look</button>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h2>Apply to other frames</h2>
+        <div class="row">
+          <button id="btnCopyEdits" class="grow" title="c">Copy look</button>
+          <button id="btnPasteEdits" class="grow" title="v" disabled>Paste look</button>
+        </div>
+        <div class="row">
+          <button id="btnApplyPicks" class="grow" title="Copy this look to the picked frames only">Look to picks</button>
+          <button id="btnApplyAll" class="grow" title="Copy this look to every frame">Look to all</button>
+        </div>
+        <div class="row">
+          <button id="btnAutoPicks" class="grow"
+            title="Measure and correct each PICKED frame on its own">Auto picks</button>
+          <button id="btnAutoAll" class="grow pri"
+            title="Measure EVERY frame and correct each one on its own. Not a copy of this look: a separate correction per frame.">Auto all</button>
+        </div>
+        <p class="note">Auto grades each frame on its own. Look to copies this one grade. Crops are never touched.</p>
+      </div>
+    </div>
+
+    <!-- ================= EXPORT ================= -->
+    <div class="pane" data-pane="export" role="tabpanel" aria-label="Export" hidden>
+      <div class="sec">
+        <h2>Export</h2>
+        <select id="exportPreset" aria-label="Export preset"></select>
+        <p class="note note-tight" id="presetNote"></p>
+        <div id="gradeNote" class="notice grade-note" hidden>
+          <span>No grade on this frame. It will export exactly as the camera
+            made it, which is flatter than it needs to be.</span>
+          <button id="btnGradeAuto" class="pri">Auto-grade it</button>
+        </div>
+        <button class="go wide" id="btnExport" disabled>Export selected shot</button>
+        <div id="downloadLinks" class="export-downloads" aria-label="Export downloads" hidden></div>
+        <label class="chk wide"
+          title="Scale the whole picture to fit inside the preset's size instead of filling it and cropping the overflow.">
+          <input type="checkbox" id="wholeFrame"><span>Whole frame, do not crop</span></label>
+        <p class="note" id="markNote" hidden></p>
+        <button id="btnClearMarks" class="wide" hidden>Clear the selection</button>
+      </div>
+
+      <div class="sec">
+        <h2>Whole session</h2>
+        <label class="chk wide">
+          <input type="checkbox" id="picksOnly"><span>Picks only</span></label>
+        <div class="row">
+          <button id="btnExportAll" class="grow" disabled>Export all</button>
+          <button id="btnSheet" class="grow">Contact sheet</button>
+        </div>
+        <div id="batchGradeNote" class="notice grade-note" hidden>
+          <span id="batchGradeTxt"></span>
+          <button id="btnBatchGradeAuto" class="pri">Auto grade them</button>
+        </div>
+        <p class="note">Each frame exports with its own saved look and crop.</p>
+      </div>
+
+      <details class="sec sec-fold">
+        <summary><h2>Output folder and names</h2></summary>
+        <div class="fld">
+          <label for="exportDir">Export folder (blank = session/exports)</label>
+          <input class="txt" id="exportDir" placeholder="~/Pictures/thumbnails">
+        </div>
+        <div class="fld">
+          <label for="nameTpl">Name template</label>
+          <input class="txt" id="nameTpl" placeholder="{stem}_{preset}">
+        </div>
+        <button id="btnSaveCfg" class="wide">Save output settings</button>
+        <p class="note" id="cfgNote"></p>
+      </details>
+    </div>
+
+    <!-- ================= LIBRARY ================= -->
+    <div class="pane" data-pane="library" role="tabpanel" aria-label="Library" hidden>
+      <div class="sec" id="rankSec" hidden>
+        <h2>Ranking</h2>
+        <div id="rankOut" hidden></div>
+      </div>
+
+      <div class="sec" id="clipsSec" hidden>
+        <h2>Clips <span id="clipCount" class="h2-aside"></span></h2>
+        <div class="strip" id="clipStrip"></div>
+      </div>
+
+      <div class="sec">
+        <h2>Audio takes</h2>
+        <div id="takes"></div>
+        <p class="note" id="takesEmpty">None yet. Record audio from the Camera tab.</p>
+      </div>
+
+      <div class="sec">
+        <h2>Folders</h2>
+        <div class="row">
+          <button id="btnOpenSession" class="grow">Open shots</button>
+          <button id="btnOpenExports" class="grow">Open exports</button>
+        </div>
+        <p class="note">These open on the camera computer. Use an export's download link to save it on this device.</p>
+        <p class="note mono" id="dirNote"></p>
+      </div>
+
+      <div class="sec">
+        <h2>Camera card</h2>
+        <div class="row">
+          <button id="btnCardList" class="grow">List card</button>
+          <button id="btnCardImport" class="grow" disabled>Import new</button>
+        </div>
+        <p class="note" id="cardNote">Pulls stills and skits shot without the laptop.</p>
+      </div>
+
+      <div class="sec">
+        <h2>Housekeeping</h2>
+        <div class="row">
+          <button id="btnTidy" class="grow"
+            title="Move exports whose source frame no longer exists into the trash. Shows you the list first.">Tidy exports</button>
+          <button id="btnEmptyTrash" class="grow danger" title="the only action here that cannot be undone">Empty trash</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="side-foot">
+    <div class="out" id="exportOut" aria-live="polite"></div>
+  </footer>
+</aside>
+
+<div id="toolWarn" hidden></div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div id="player" hidden>
+  <video id="playerVid" controls playsinline preload="metadata"></video>
+  <div id="playerBar">
+    <div id="playerName"></div>
+    <div id="trimRow">
+      <button id="btnIn" title="i">Set in</button>
+      <button id="btnOut" title="o">Set out</button>
+      <span id="trimTxt">in 0:00.0 &nbsp; out end</span>
+      <button id="btnTrimGo" class="go">Save trim</button>
+      <label class="chk chk-sm" title="Instant, but the cut snaps to the nearest keyframe and can miss by up to a second"><input type="checkbox" id="trimFast"><span>Fast cut</span></label>
+      <button id="btnTrimClear">Reset</button>
+    </div>
+    <div id="trimRow2">
+      <button id="btnGrab" title="Save the current frame as a still, for a thumbnail">Grab frame</button>
+      <button id="btnSyncAudio" title="Replace the camera's audio with the recorded take, lined up on the clap">Use recorded audio</button>
+      <button id="btnPlayTrim" hidden title="Watch the cut you just made">Play the cut</button>
+    </div>
+    <div id="trimOut"></div>
+    <div class="player-hint">esc to close</div>
+  </div>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <form method="dialog" id="dlgForm">
+    <h3 id="dlgTitle"></h3>
+    <div id="dlgBody"></div>
+    <input class="txt" id="dlgInput" autocomplete="off" hidden>
+    <div class="dlg-actions">
+      <button type="button" id="dlgCancel">Cancel</button>
+      <button type="button" id="dlgOk" class="pri">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<pre id="layout" hidden></pre>
+
+<div id="keys" hidden>
+  <div id="keysBox">
+    <h3>Keyboard</h3>
+    <table id="keysTbl"></table>
+    <p class="note">? or esc to close</p>
+  </div>
+</div>
+
+<div id="loupe" hidden>
+  <img id="loupeImg" alt="">
+  <div id="loupeBar">1:1 focus check &nbsp; tap outside the image or press Esc to close</div>
+</div>
+
+<pre id="e2e" hidden></pre>
+<script src="/app.js"></script>
+</body>
+</html>

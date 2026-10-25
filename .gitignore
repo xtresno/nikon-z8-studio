@@ -1,0 +1,16 @@
+# Runtime state, written by the running server. Never source.
+config.json
+.last-mode.json
+.live-turn.json
+camera-presets.json
+*.tmp
+__pycache__/
+.cache/
+.feed.json
+.feed-*.json
+.feed-status.json
+
+# Build output
+target/
+web/node_modules/
+web/dist/

@@ -1,0 +1,236 @@
+{
+  "export": [
+    {
+      "id": "headshot-8x10",
+      "label": "Actor headshot, 8x10 print",
+      "note": "2400x3000 at 300 dpi. The standard acting headshot is 8x10, not square.",
+      "w": 2400,
+      "h": 3000,
+      "fit": "cover",
+      "anchor": "face",
+      "format": "JPEG",
+      "quality": 97,
+      "dpi": 300
+    },
+    {
+      "id": "casting-profile",
+      "label": "Casting site profile",
+      "note": "1200x1600 held under 2 MB. Actors Access and Backstage refuse an oversized upload rather than resizing it.",
+      "w": 1200,
+      "h": 1600,
+      "fit": "cover",
+      "anchor": "face",
+      "format": "JPEG",
+      "quality": 96,
+      "max_kb": 2048
+    },
+    {
+      "id": "selftape-slate",
+      "label": "Self-tape slate frame",
+      "note": "1920x1080, the still that heads a self-tape",
+      "w": 1920,
+      "h": 1080,
+      "fit": "cover",
+      "anchor": "face",
+      "format": "JPEG",
+      "quality": 95
+    },
+    {
+      "id": "agent-email",
+      "label": "Email to an agent",
+      "note": "Long edge 1600, under 500 KB so it does not bounce",
+      "w": 1600,
+      "h": 1600,
+      "fit": "contain",
+      "format": "JPEG",
+      "quality": 94,
+      "max_kb": 500
+    },
+    {
+      "id": "yt-thumb",
+      "label": "YouTube thumbnail",
+      "note": "1280x720, what Gemini wants as the headshot input",
+      "w": 1280,
+      "h": 720,
+      "fit": "cover",
+      "anchor": "face",
+      "format": "JPEG",
+      "quality": 95
+    },
+    {
+      "id": "headshot",
+      "label": "Headshot square",
+      "note": "1024x1024, crops to the upper third so the eyes sit high",
+      "w": 1024,
+      "h": 1024,
+      "fit": "cover",
+      "anchor": "face",
+      "format": "JPEG",
+      "quality": 96
+    },
+    {
+      "id": "headshot-cutout",
+      "label": "Headshot, PNG",
+      "note": "Same crop, lossless, for compositing",
+      "w": 1024,
+      "h": 1024,
+      "fit": "cover",
+      "anchor": "face",
+      "format": "PNG"
+    },
+    {
+      "id": "x-post",
+      "label": "X / Twitter",
+      "note": "1600x900",
+      "w": 1600,
+      "h": 900,
+      "fit": "cover",
+      "anchor": "center",
+      "format": "JPEG",
+      "quality": 94
+    },
+    {
+      "id": "ig-square",
+      "label": "Instagram square",
+      "w": 1080,
+      "h": 1080,
+      "fit": "cover",
+      "anchor": "center",
+      "format": "JPEG",
+      "quality": 95
+    },
+    {
+      "id": "ig-portrait",
+      "label": "Instagram portrait",
+      "w": 1080,
+      "h": 1350,
+      "fit": "cover",
+      "anchor": "face",
+      "format": "JPEG",
+      "quality": 95
+    },
+    {
+      "id": "web-2k",
+      "label": "Web, long edge 2048",
+      "note": "Keeps the full frame, no crop",
+      "w": 2048,
+      "h": 2048,
+      "fit": "contain",
+      "format": "JPEG",
+      "quality": 95
+    },
+    {
+      "id": "original",
+      "label": "Original file, untouched",
+      "note": "A byte-for-byte copy of what the camera wrote. Generation 1, nothing re-encoded. Start here if you are going to edit in DarkTable. Your sliders are NOT applied.",
+      "w": 0,
+      "h": 0,
+      "fit": "contain",
+      "format": "COPY"
+    },
+    {
+      "id": "edit-lossless",
+      "label": "Full size, lossless (DarkTable)",
+      "note": "Full resolution PNG with your grade baked in, exactly lossless. About 52 MB a frame. Use this when you want the look kept and still want to edit on top.",
+      "w": 0,
+      "h": 0,
+      "fit": "contain",
+      "format": "PNG"
+    },
+    {
+      "id": "full",
+      "label": "Full size",
+      "note": "No resize, maximum quality",
+      "w": 0,
+      "h": 0,
+      "fit": "contain",
+      "format": "JPEG",
+      "quality": 98
+    }
+  ],
+  "look": [
+    {
+      "id": "flat",
+      "label": "As shot",
+      "exposure": 1.0,
+      "contrast": 1.0,
+      "saturation": 1.0,
+      "warmth": 0.0,
+      "sharpness": 1.0,
+      "shadows": 0.0,
+      "highlights": 0.0,
+      "tint": 0.0,
+      "vignette": 0.0
+    },
+    {
+      "id": "thumbnail-punch",
+      "label": "Thumbnail punch",
+      "note": "Reads at 200px on a phone. Shadows open, highlights pulled back so the face does not blow out.",
+      "exposure": 1.06,
+      "contrast": 1.22,
+      "saturation": 1.18,
+      "warmth": 0.12,
+      "sharpness": 1.5,
+      "shadows": 0.18,
+      "highlights": -0.22,
+      "tint": 0.0,
+      "vignette": 0.25
+    },
+    {
+      "id": "clean-headshot",
+      "label": "Clean headshot",
+      "note": "Gentle. Opens the shadow side of the face, recovers the forehead, keeps skin believable.",
+      "exposure": 1.05,
+      "contrast": 1.06,
+      "saturation": 1.02,
+      "warmth": 0.08,
+      "sharpness": 1.15,
+      "shadows": 0.22,
+      "highlights": -0.18,
+      "tint": 0.02,
+      "vignette": 0.12
+    },
+    {
+      "id": "studio-cool",
+      "label": "Studio cool",
+      "note": "Pulls the warmth out, good under tungsten practicals",
+      "exposure": 1.02,
+      "contrast": 1.12,
+      "saturation": 0.96,
+      "warmth": -0.15,
+      "sharpness": 1.2,
+      "shadows": 0.1,
+      "highlights": -0.12,
+      "tint": -0.04,
+      "vignette": 0.1
+    },
+    {
+      "id": "moody",
+      "label": "Moody",
+      "note": "Deep contrast, desaturated, for a serious cut",
+      "exposure": 0.94,
+      "contrast": 1.35,
+      "saturation": 0.82,
+      "warmth": -0.05,
+      "sharpness": 1.25,
+      "shadows": -0.18,
+      "highlights": -0.3,
+      "tint": 0.0,
+      "vignette": 0.42
+    },
+    {
+      "id": "bright-flat",
+      "label": "Bright and flat",
+      "note": "Headroom left for grading later",
+      "exposure": 1.12,
+      "contrast": 0.92,
+      "saturation": 0.98,
+      "warmth": 0.04,
+      "sharpness": 1.0,
+      "shadows": 0.3,
+      "highlights": -0.1,
+      "tint": 0.0,
+      "vignette": 0.0
+    }
+  ]
+}

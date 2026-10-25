@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Z8 Prompter</title>
+<link rel="icon" href="/icon-192.png">
+<style>
+:root { --bg: #000; --text: #fff; --mark: rgba(90, 168, 255, .55); }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden; cursor: none; }
+#view { position: absolute; inset: 0; overflow: hidden; }
+#view.mirror { transform: scaleX(-1); }
+#text { position: absolute; left: 22%; right: 22%; top: 0; white-space: pre-wrap; font: 600 48px/1.35 system-ui, sans-serif;
+  will-change: transform; }
+#mark { position: absolute; left: 0; right: 0; top: 33%; height: 0; border-top: 3px solid var(--mark); pointer-events: none; }
+#mark::before { content: ""; position: absolute; left: 0; top: -14px; border: 12px solid transparent; border-left: 18px solid var(--mark); }
+#hint { position: absolute; bottom: 0; left: 0; right: 0; padding: 6px; text-align: center; color: #888; background: #000; font: 14px system-ui; }
+</style>
+</head>
+<body>
+<div id="view"><div id="text">Paste your script in the Z8 Recorder page.</div><div id="mark"></div></div>
+<div id="hint">Space play/pause · ↑↓ speed · ←→ jump · +− size · [ ] margins · C center · Home top · F full screen</div>
+<script src="/prompter.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+[Unit]
+Description=Z8 Studio always-on webcam feed (keeps /dev/video10 alive for OBS and Zoom)
+After=graphical-session.target
+# systemd reads StartLimit* here, in [Unit]; in [Service] they are ignored.
+StartLimitIntervalSec=0
+
+[Service]
+ExecStart=%h/bin/z8-studio/target/release/z8-feed
+Restart=always
+RestartSec=1
+# SIGTERM: the keeper releases the camera with SIGINT to mtplvcap, cleanly.
+KillSignal=SIGTERM
+# A live picture must win over background work: under load the feed lagged.
+CPUWeight=1000
+TimeoutStopSec=15
+
+[Install]
+WantedBy=default.target

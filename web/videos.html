@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Z8 Videos</title>
+<link rel="icon" href="/icon-192.png">
+<style>
+:root { --bg: #0b0d10; --card: #12151a; --line: #262b33; --text: #e8eaed; --dim: #9aa3ad; --accent: #f97316; --good: #22c55e; --warn: #eab308; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, sans-serif; }
+header { position: sticky; top: 0; z-index: 2; display: flex; gap: 16px; align-items: center; padding: 10px 16px; background: #0b0d10ee; border-bottom: 1px solid var(--line); }
+header h1 { font-size: 17px; margin: 0; }
+header a { color: var(--dim); text-decoration: none; }
+header a:hover { color: var(--text); }
+main { max-width: 980px; margin: 0 auto; padding: 16px; }
+.video { background: var(--card); border: 1px solid var(--line); border-radius: 10px; margin: 0 0 18px; overflow: hidden; }
+.video > summary { cursor: pointer; padding: 14px 16px; list-style: none; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.video > summary::-webkit-details-marker { display: none; }
+.video > summary h2 { font-size: 17px; margin: 0; flex: 1 1 360px; }
+.pill { font-size: 12px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--dim); white-space: nowrap; }
+.pill.published { color: var(--good); border-color: #22c55e55; }
+.pill.recorded { color: var(--accent); border-color: #f9731655; }
+.pill.idea { color: var(--warn); border-color: #eab30855; }
+.body { padding: 0 16px 16px; }
+h3 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); margin: 18px 0 8px; }
+.ab { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.slot { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #0e1115; }
+.slot b { color: var(--accent); }
+.row { display: flex; gap: 8px; align-items: flex-start; margin: 4px 0; }
+.row .t { flex: 1; }
+button.copy { flex: none; background: #1b2028; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; font-size: 12px; cursor: pointer; }
+button.copy:hover { border-color: var(--accent); }
+button.copy.done { color: var(--good); border-color: var(--good); }
+pre { white-space: pre-wrap; word-break: break-word; background: #0e1115; border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin: 0; font: 13px/1.5 ui-monospace, monospace; color: #d4d8dd; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+td, th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--dim); font-weight: 500; font-size: 12px; }
+.tier { font-weight: 700; width: 34px; }
+.muted { color: var(--dim); font-size: 13px; }
+a.link { color: #7cc4ff; word-break: break-all; }
+.err { color: #f87171; }
+.pub { border: 1px solid #f9731655; border-radius: 10px; padding: 10px 12px; margin: 6px 0 14px; background: #0e1115; }
+.pub .steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 8px; }
+.pub button.step { background: #1b2028; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; font-size: 14px; cursor: pointer; }
+.pub button.step:hover { border-color: var(--accent); }
+.pub button.step:disabled { opacity: .5; cursor: default; }
+.job { font-size: 13px; margin: 2px 0; }
+.job.running { color: var(--warn); } .job.done { color: var(--good); } .job.error { color: #f87171; } .job.needs-auth { color: #7cc4ff; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin-top: 8px; }
+.thumb { position: relative; border: 2px solid transparent; border-radius: 8px; overflow: hidden; cursor: pointer; background: #000; }
+.thumb img { width: 100%; display: block; aspect-ratio: 16/9; object-fit: cover; }
+.thumb.picked { border-color: var(--accent); }
+.thumb .badge { position: absolute; top: 6px; left: 6px; background: var(--accent); color: #111; font-weight: 800; border-radius: 6px; padding: 1px 8px; }
+.thumb .cap { position: absolute; bottom: 0; left: 0; right: 0; font-size: 11px; padding: 3px 6px; background: #000a; color: #ddd; }
+.titles label { display: block; padding: 3px 0; cursor: pointer; }
+@media (max-width: 600px) { main { padding: 10px; } .video > summary h2 { font-size: 15px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Videos</h1>
+  <a href="/record">Recorder</a>
+  <a href="/">Studio</a>
+  <span class="muted" id="where"></span>
+</header>
+<main id="list"><p class="muted">Loading...</p></main>
+<script>
+const $ = (t, a = {}, ...kids) => { const e = document.createElement(t); for (const [k, v] of Object.entries(a)) { if (k === "class") e.className = v; else if (k === "text") e.textContent = v; else e.setAttribute(k, v); } for (const c of kids) if (c != null) e.append(c); return e; };
+function copyBtn(text) {
+  const b = $("button", { class: "copy", text: "Copy" });
+  b.onclick = async (ev) => { ev.preventDefault(); ev.stopPropagation();
+    try { await navigator.clipboard.writeText(text); } catch { const ta = $("textarea"); ta.value = text; document.body.append(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+    b.textContent = "Copied"; b.classList.add("done"); setTimeout(() => { b.textContent = "Copy"; b.classList.remove("done"); }, 1400); };
+  return b;
+}
+const row = (text, label) => $("div", { class: "row" }, $("div", { class: "t" }, label ? $("b", { text: label + " " }) : null, document.createTextNode(text)), copyBtn(text));
+const block = (title, text) => text ? [$("h3", { text: title }), $("div", { class: "row" }, $("pre", { class: "t", text }), copyBtn(text))] : [];
+// Which videos are open survives the reload that runs every time the tab
+// regains focus (coming back from Gemini used to snap the page back to the
+// file marked "open" and close the one being worked on, 2026-10-20).
+let openFiles = null;
+try { openFiles = JSON.parse(sessionStorage.getItem("z8-videos-open") || "null"); } catch {}
+function saveOpen() {
+  const files = [...document.querySelectorAll("details.video[open]")].map(d => d.dataset.file);
+  openFiles = files;
+  try { sessionStorage.setItem("z8-videos-open", JSON.stringify(files)); } catch {}
+}
+// The publishing pipeline: transcribe -> thumbnails -> pick -> upload. Each
+// button starts a script in your scripts repo; its progress lands in kit.jobs and the
+// page re-reads every 4 s while anything is running.
+const post = (url, body) => fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then(x => x.json()).catch(e => ({ ok: false, error: String(e) }));
+function publishPanel(v, slug) {
+  const box = $("div", { class: "pub" }, $("h3", { text: "Publish (automatic)", style: "margin-top:2px" }));
+  const steps = $("div", { class: "steps" });
+  const step = (label, action, args) => {
+    const btn = $("button", { class: "step", text: label });
+    if (v.jobs?.[action]?.state === "running") btn.disabled = true;
+    btn.onclick = async (e) => { e.preventDefault(); btn.disabled = true; btn.textContent = "Starting..."; const r = await post("/api/videos/run", { slug, action, args }); if (!r.ok) btn.textContent = "Failed: " + (r.error || ""); setTimeout(load, 800); };
+    return btn;
+  };
+  steps.append(step("Use Tascam audio", "sync-tascam"), step("1. Transcribe", "transcribe"), step("2. Generate thumbnails", "thumbs"), step("3. Upload to YouTube (private)", "publish"));
+  box.append(steps);
+  for (const [name, j] of Object.entries(v.jobs || {})) {
+    const line = $("div", { class: "job " + j.state }, $("b", { text: name + ": " }), document.createTextNode(`${j.state}. ${j.message || ""} `));
+    if (j.authUrl) line.append($("a", { class: "link", href: j.authUrl, target: "_blank", rel: "noopener", text: "Sign in to YouTube" }));
+    if (j.url) line.append($("a", { class: "link", href: j.url, target: "_blank", rel: "noopener", text: "Open in Studio" }));
+    box.append(line);
+  }
+  if (v.titles?.length) {
+    const t = $("div", { class: "titles" }, $("h3", { text: "Upload title" }));
+    const current = v.picked_title || v.titles[0].title;
+    for (const x of v.titles) {
+      const r = $("input", { type: "radio", name: "title-" + slug });
+      r.checked = x.title === current;
+      r.onchange = async () => { await post("/api/videos/pick", { slug, title: x.title }); };
+      t.append($("label", {}, r, document.createTextNode(" " + x.title)));
+    }
+    box.append(t);
+  }
+  const gen = v.generated_thumbnails || [];
+  if (gen.length) {
+    const picks = v.picked_thumbnails || [];
+    box.append($("h3", { text: `Thumbnails (${gen.length}). Click up to 3: A is uploaded, A/B/C go in Studio's Test & Compare` }));
+    const grid = $("div", { class: "grid" });
+    for (const g of gen) {
+      const i = picks.indexOf(g.file);
+      const cell = $("div", { class: "thumb" + (i >= 0 ? " picked" : "") }, $("img", { src: "/api/videos/img?path=" + encodeURIComponent(g.file), loading: "lazy", alt: g.label }),
+        i >= 0 ? $("span", { class: "badge", text: "ABC"[i] }) : null, $("span", { class: "cap", text: g.label }));
+      cell.onclick = async () => { await post("/api/videos/pick", { slug, thumbnail: g.file }); load(); };
+      grid.append(cell);
+    }
+    box.append(grid);
+  }
+  return box;
+}
+function render(v, file) {
+  const d = $("details", { class: "video" });
+  d.dataset.file = file;
+  if (openFiles ? openFiles.includes(file) : v.open) d.open = true;
+  // A toggle from an element a newer reload already removed is not the user.
+  d.addEventListener("toggle", () => { if (d.isConnected) saveOpen(); });
+  d.append($("summary", {}, $("h2", { text: v.working_title || v.titles?.[0]?.title || file }),
+    $("span", { class: "pill " + (v.status || ""), text: v.status || "" }), v.date ? $("span", { class: "pill", text: v.date }) : null));
+  const b = $("div", { class: "body" });
+  const slug = file.replace(/\.json$/, "");
+  if (!file.startsWith("0-")) b.append(publishPanel(v, slug));
+  if (v.recorder_slug) {
+    const lb = $("button", { class: "copy", style: "font-size:14px;padding:6px 12px;margin:4px 0 8px;border-color:#f97316", text: "Load this script in the recorder" });
+    lb.onclick = async () => {
+      lb.textContent = "Loading...";
+      const r = await fetch("/api/videos/load", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug: v.recorder_slug }) }).then(x => x.json()).catch(e => ({ ok: false, error: String(e) }));
+      lb.textContent = r.ok ? "Loaded. Switch to the Recorder tab" : "Failed: " + (r.error || "");
+      lb.classList.toggle("done", !!r.ok);
+    };
+    b.append(lb);
+  }
+  if (v.summary) b.append($("p", { class: "muted", text: v.summary }));
+  if (v.ab_tests?.length) {
+    b.append($("h3", { text: "YouTube A/B test (Test & Compare): 3 sets" }));
+    const g = $("div", { class: "ab" });
+    for (const t of v.ab_tests) g.append($("div", { class: "slot" }, $("div", {}, $("b", { text: t.slot })), row(t.title, "Title"), t.thumbnail_text ? $("div", { class: "muted", text: "Thumbnail text: " + t.thumbnail_text }) : null, t.why ? $("div", { class: "muted", text: t.why }) : null, t.gemini_prompt ? $("div", { class: "row" }, $("span", { class: "muted", text: "Gemini prompt below" })) : null));
+    b.append(g);
+    const prompts = v.ab_tests.filter(t => t.gemini_prompt);
+    if (prompts.length) {
+      b.append($("h3", { text: "Gemini thumbnail prompts (attach your headshot)" }));
+      for (const t of prompts) b.append($("div", { class: "slot", style: "margin-bottom:10px" }, $("div", {}, $("b", { text: t.slot + ": " + (t.thumbnail_text || "") })), $("div", { class: "row" }, $("pre", { class: "t", text: t.gemini_prompt }), copyBtn(t.gemini_prompt))));
+    }
+  }
+  if (v.titles?.length) {
+    b.append($("h3", { text: "All title ideas (ranked)" }));
+    const tb = $("table", {}, $("tr", {}, $("th", { text: "Tier" }), $("th", { text: "Title" }), $("th", { text: "Chars" }), $("th", { text: "" })));
+    for (const t of v.titles) tb.append($("tr", {}, $("td", { class: "tier", text: t.tier || "" }), $("td", {}, document.createTextNode(t.title), t.why ? $("div", { class: "muted", text: t.why }) : null), $("td", { text: String(t.title.length) }), $("td", {}, copyBtn(t.title))));
+    b.append(tb);
+  }
+  if (v.thumbnails?.length) {
+    b.append($("h3", { text: "More thumbnail prompts (" + v.thumbnails.length + ")" }));
+    for (const t of v.thumbnails) b.append($("div", { class: "slot", style: "margin-bottom:10px" }, $("div", {}, $("b", { text: t.label }), t.pairs_with ? $("span", { class: "muted", text: "  pairs with " + t.pairs_with }) : null), $("div", { class: "row" }, $("pre", { class: "t", text: t.prompt }), copyBtn(t.prompt))));
+  }
+  b.append(...block("Description", v.description));
+  b.append(...block("Tags", (v.tags || []).join(", ")));
+  b.append(...block("Pinned comment", v.pinned_comment));
+  if (v.links?.length) { b.append($("h3", { text: "Links" })); for (const l of v.links) b.append($("div", { class: "row" }, $("div", { class: "t" }, $("span", { class: "muted", text: l.label + ": " }), $("a", { class: "link", href: l.url, target: "_blank", rel: "noopener", text: l.url })), copyBtn(l.url))); }
+  if (v.files?.length) { b.append($("h3", { text: "Files" })); for (const f of v.files) b.append(row(f.path, f.label)); }
+  if (v.notes?.length) { b.append($("h3", { text: "Notes" })); const ul = $("ul"); for (const n of v.notes) ul.append($("li", { text: n })); b.append(ul); }
+  d.append(b);
+  return d;
+}
+async function load() {
+  const r = await fetch("/api/videos").then(x => x.json()).catch(e => ({ ok: false, error: String(e) }));
+  const list = document.getElementById("list");
+  if (list.querySelector("details.video")) saveOpen(); // not the "Loading" placeholder
+  const y = window.scrollY;
+  list.innerHTML = "";
+  if (!r.ok) { list.append($("p", { class: "err", text: "Could not load: " + (r.error || "") })); return; }
+  document.getElementById("where").textContent = r.dir;
+  if (!r.videos.length) list.append($("p", { class: "muted", text: "No videos yet. Add a JSON file to " + r.dir }));
+  for (const it of r.videos) list.append(it.error ? $("p", { class: "err", text: it.file + ": " + it.error }) : render(it.video, it.file));
+  window.scrollTo(0, y);
+  clearTimeout(window.__poll);
+  if (r.videos.some(it => Object.values(it.video?.jobs || {}).some(j => j.state === "running" || j.state === "needs-auth"))) window.__poll = setTimeout(load, 4000);
+}
+load();
+window.addEventListener("focus", load);
+</script>
+</body>
+</html>

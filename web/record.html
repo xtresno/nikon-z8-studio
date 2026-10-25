@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Z8 Recorder</title>
+<link rel="icon" href="/icon-192.png">
+<style>
+:root {
+  --bg: #111317; --panel: #1b1e24; --line: #2c313a; --text: #e8eaee; --dim: #9aa3b2;
+  --good: #3ecf7a; --warn: #f2b84b; --bad: #ff5a5f; --accent: #5aa8ff;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; }
+header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+header a { color: var(--dim); font-size: 13px; }
+#clock { margin-left: auto; font: 600 20px/1 ui-monospace, monospace; }
+#clock.on { color: var(--bad); }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; padding: 16px; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+.stage { background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 16 / 9; position: relative; }
+.stage canvas { width: 100%; height: 100%; display: block; }
+#recdot { position: absolute; top: 10px; left: 10px; background: var(--bad); color: #fff; padding: 2px 8px;
+  border-radius: 4px; font-weight: 700; display: none; }
+#recdot.on { display: block; }
+#alert { margin-top: 10px; padding: 10px 12px; border-radius: 6px; background: #3a1416; color: #ffd6d7;
+  border: 1px solid var(--bad); display: none; font-weight: 600; }
+#alert.on { display: block; }
+.side { display: flex; flex-direction: column; gap: 12px; }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+section h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); margin: 0 0 8px; }
+label { display: block; margin: 6px 0 2px; color: var(--dim); font-size: 12px; }
+select, textarea, input[type=number] { width: 100%; background: #0d0f12; color: var(--text); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 8px; font: inherit; }
+textarea { min-height: 120px; resize: vertical; }
+button { background: #2a2f38; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px;
+  font: inherit; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+button.big { width: 100%; padding: 12px; font-size: 16px; font-weight: 700; }
+#go { background: #8e1d22; border-color: var(--bad); }
+#go.on { background: #2a2f38; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row > * { flex: 1; }
+.check { display: flex; gap: 8px; align-items: center; margin: 6px 0; color: var(--text); font-size: 13px; }
+.check input { width: auto; }
+.status { font-size: 13px; margin: 3px 0; }
+.status b { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--dim); margin-right: 6px; }
+.status.good b { background: var(--good); }
+.status.warn b { background: var(--warn); }
+.status.bad b { background: var(--bad); }
+.meter { height: 10px; background: #0d0f12; border-radius: 5px; overflow: hidden; margin-top: 6px; border: 1px solid var(--line); }
+.meter div { height: 100%; width: 0; background: var(--good); transition: width 80ms linear; }
+.meter div.hot { background: var(--bad); }
+#takes { font-size: 13px; color: var(--dim); }
+#takes div { margin: 3px 0; word-break: break-all; }
+kbd { background: #0d0f12; border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Z8 Recorder</h1>
+  <a href="/">Studio</a>
+  <a href="/videos">Videos</a>
+  <span id="clock">00:00</span>
+</header>
+<main>
+  <div>
+    <div class="stage"><canvas id="out" width="1920" height="1080"></canvas><span id="recdot">REC</span></div>
+    <div id="alert"></div>
+    <section style="margin-top:12px">
+      <h2>Health</h2>
+      <div class="status" id="st-screen"><b></b>Screen: not shared</div>
+      <div class="status" id="st-cam"><b></b>Camera: off</div>
+      <div class="status" id="st-mic"><b></b>Mic: off</div>
+      <div class="meter"><div id="meter"></div></div>
+      <div class="status" id="st-perf"><b></b>Preview: starting</div>
+      <div class="status" id="st-save"><b></b>Saving: idle</div>
+      <div class="status" id="st-backup"><b></b>Backup audio: idle</div>
+    </section>
+  </div>
+  <div class="side">
+    <section>
+      <h2>Studio ready</h2>
+      <p class="status" id="ready-sum" style="color:var(--dim)">Checking...</p>
+      <ul id="ready-list" style="margin:6px 0 8px;padding-left:0;list-style:none;line-height:1.5"></ul>
+      <div class="row"><button id="ready-run">Check everything</button></div>
+    </section>
+    <section>
+      <button class="big" id="go" disabled>Record</button>
+      <p class="status" style="color:var(--dim)">Keep this window open and visible. Put your notes or slides on the other screen.</p>
+    </section>
+    <section>
+      <h2>Sources</h2>
+      <div class="row"><button id="share">Share screen</button><button id="z8on">Start Z8 webcam</button></div>
+      <label for="cam">Camera</label><select id="cam"></select>
+      <label for="mic">Microphone</label><select id="mic"></select>
+      <label class="check"><input type="checkbox" id="backup" checked>Also record a backup WAV of the mic</label>
+      <label class="check"><input type="checkbox" id="clean" checked>Also save a copy with background noise removed</label>
+    </section>
+    <section>
+      <h2>Layout</h2>
+      <select id="layout">
+        <option value="pip">Screen + camera in corner</option>
+        <option value="cam">Camera only</option>
+        <option value="screen">Screen only</option>
+      </select>
+      <div class="row">
+        <div><label for="corner">Corner</label><select id="corner">
+          <option value="br">Bottom right</option><option value="bl">Bottom left</option>
+          <option value="tr">Top right</option><option value="tl">Top left</option></select></div>
+        <div><label for="pipsize">Camera size</label><select id="pipsize">
+          <option value="0.22">Small</option><option value="0.3" selected>Medium</option><option value="0.4">Large</option></select></div>
+      </div>
+      <p class="status" style="color:var(--dim)">Keys: <kbd>1</kbd> screen + camera, <kbd>2</kbd> camera, <kbd>3</kbd> screen.</p>
+    </section>
+    <section>
+      <h2>Teleprompter</h2>
+      <label for="script">Script</label>
+      <textarea id="script" placeholder="Paste your script here."></textarea>
+      <p class="status" id="script-src" style="color:var(--dim)">New scripts load here by themselves from ~/Pictures/z8-studio/scripts/latest.txt.</p>
+      <div class="row" style="margin-top:8px"><button id="popen">Open prompter</button><button id="pplay">Play</button><button id="preset">Top</button></div>
+      <div class="row">
+        <div><label for="pspeed">Speed</label><input type="number" id="pspeed" min="5" max="400" step="5" value="60"></div>
+      </div>
+      <label for="psize">Text size <span id="psize-v"></span></label><input type="range" id="psize" min="24" max="200" step="2" value="48">
+      <label for="palign">Text alignment</label><select id="palign"><option value="center">Center</option><option value="left">Left</option></select>
+      <label for="pmargin">Side margins <span id="pmargin-v"></span></label><input type="range" id="pmargin" min="0" max="40" step="1" value="22">
+      <label for="pline">Line spacing <span id="pline-v"></span></label><input type="range" id="pline" min="1" max="2.2" step="0.05" value="1.35">
+      <label for="pmark">Reading line from top <span id="pmark-v"></span></label><input type="range" id="pmark" min="10" max="70" step="1" value="33">
+      <label class="check"><input type="checkbox" id="pmirror">Mirror text (for a glass that flips)</label>
+      <label class="check"><input type="checkbox" id="pauto" checked>Start scrolling when I press Record</label>
+      <p class="status" style="color:var(--dim)">In the prompter window: <kbd>Space</kbd> play/pause, <kbd>↑</kbd><kbd>↓</kbd> speed, <kbd>F</kbd> full screen, <kbd>+</kbd><kbd>&minus;</kbd> text size, <kbd>[</kbd><kbd>]</kbd> margins, <kbd>C</kbd> center/left.</p>
+    </section>
+    <section>
+      <h2>Charts for this video</h2>
+      <div class="row"><button id="charts-open">Open all in the browser</button></div>
+      <ol id="charts" style="margin:8px 0 0;padding-left:22px;line-height:1.7"><li style="color:var(--dim)">No chart list for this script yet.</li></ol>
+    </section>
+    <section>
+      <h2>Numbers check</h2>
+      <div class="row"><button id="check-run">Re-check numbers now</button></div>
+      <p class="status" id="check-sum" style="color:var(--dim)">Every figure the script quotes, re-pulled from its source.</p>
+      <ul id="check-list" style="margin:6px 0 0;padding-left:18px;line-height:1.6"></ul>
+    </section>
+    <section>
+      <h2>Takes</h2>
+      <div id="takes">None yet.</div>
+      <button id="folder" style="margin-top:8px">Open recordings folder</button>
+    </section>
+  </div>
+</main>
+<script src="/record.js"></script>
+</body>
+</html>

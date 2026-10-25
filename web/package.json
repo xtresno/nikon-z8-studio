@@ -1,0 +1,12 @@
+{
+  "name": "z8-studio-web",
+  "private": true,
+  "description": "The Z8 Studio page, in TypeScript. `npm run build` writes dist/app.js, which the server serves as /app.js.",
+  "scripts": {
+    "build": "tsc -p .",
+    "check": "tsc -p . --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

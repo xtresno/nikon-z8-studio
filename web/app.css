@@ -1,0 +1,522 @@
+/* Single dark theme on purpose: this runs in a lit studio next to the talent,
+   and a bright UI both blinds you and bounces off the prompter glass.
+
+   Rewritten 2026-09-22. The old sheet had grown three generations of the same
+   rules (`.sec`, `.row`, `button`, sliders each defined twice or three times,
+   the later copy silently winning), and several ids carried `display:` rules
+   that beat the `hidden` attribute, so a hidden, empty <img> rendered as a
+   broken-image icon in the middle of the stage. One definition per thing now,
+   and `[hidden]` always wins. */
+:root{
+  color-scheme:dark;
+  /* Surfaces climb in small steps so panels read as layers. */
+  --ink:#0A0C10; --panel:#12171E; --panel2:#1A212A; --panel3:#222B36;
+  --line:#242D39; --line2:#303B49;
+  --fg:#EDF1F6; --dim:#94A1AE; --mute:#8A96A2;
+  --amber:#E9B04A; --tally:#FC5F64; --ok:#3DD68C; --blue:#5B93F5;
+  --stage:#06080A;
+  --ui:"Inter var","Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --r:10px; --r-sm:7px;
+  --ctl:32px;          /* one control height, everywhere */
+  --shadow:0 1px 2px #00000040, 0 2px 8px #0000002e;
+  --shadow-lg:0 12px 40px #00000073;
+  --side-w:384px;
+}
+
+/* The attribute is the single source of truth for visibility. */
+[hidden]{display:none !important}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--ink);color:var(--fg);
+  font-family:var(--ui);font-size:13px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  font-feature-settings:"cv05","ss01","tnum"}
+body{display:grid;grid-template-columns:minmax(0,1fr) var(--side-w);overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:4px}
+::selection{background:var(--amber);color:#150a06}
+b{font-weight:600}
+
+/* ================= controls ================= */
+button{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:var(--ctl);padding:0 13px;white-space:nowrap;
+  background:var(--panel3);border:1px solid var(--line2);color:var(--fg);
+  border-radius:var(--r-sm);cursor:pointer;font-size:12.5px;font-weight:500;
+  box-shadow:0 1px 0 #ffffff0d inset;
+  transition:background .12s,border-color .12s,color .12s,transform .05s}
+button:hover:not(:disabled){background:#2A3441;border-color:#3C4959}
+button:active:not(:disabled){transform:translateY(1px)}
+button:disabled{opacity:.42;cursor:not-allowed}
+button[aria-pressed=true]{background:#2A2318;border-color:#E9B04A99;color:var(--amber)}
+/* a running batch: the button is live, not dead, so it stays clickable
+   and reads as the cancel it now is */
+button.busy,button.busy:hover:not(:disabled){background:var(--tally);color:#150a06;border-color:var(--tally)}
+button.pri{background:#1B2A45;border-color:#5B93F599;color:#CFE0FF}
+button.pri:hover:not(:disabled){background:#22365A;border-color:var(--blue)}
+button.go{background:#16261E;border-color:#3DD68C88;color:var(--ok);font-weight:600}
+button.go:hover:not(:disabled){background:#1C3327;border-color:var(--ok)}
+button.danger{color:#FF9A9D;border-color:#FC5F6455;background:#221619}
+button.danger:hover:not(:disabled){background:#2E1A1D;border-color:var(--tally);color:var(--tally)}
+.icon-btn{width:var(--ctl);padding:0;font-size:15px;flex:0 0 auto}
+.wide{width:100%}
+.grow{flex:1 1 0;min-width:0}
+
+select,.txt{width:100%;height:var(--ctl);background:var(--panel2);
+  border:1px solid var(--line2);color:var(--fg);border-radius:var(--r-sm);
+  padding:0 10px;font-size:12.5px;transition:border-color .12s}
+select{padding-right:6px;cursor:pointer}
+select:hover,.txt:hover{border-color:#3C4959}
+.txt::placeholder{color:var(--mute)}
+
+.row{display:flex;gap:7px;align-items:center}
+.row + .row{margin-top:7px}
+.fld{margin-bottom:10px}
+.fld label{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--mute);margin-bottom:5px}
+
+.chk{display:inline-flex;align-items:center;gap:8px;min-height:var(--ctl);padding:0 11px;
+  background:var(--panel2);border:1px solid var(--line2);border-radius:var(--r-sm);
+  font-size:12.5px;color:var(--fg);cursor:pointer;user-select:none;white-space:nowrap}
+.chk input{width:15px;height:15px;accent-color:var(--amber);cursor:pointer;margin:0}
+.chk:hover{border-color:#3C4959}
+.chk.wide{display:flex;margin-top:8px}
+
+/* sliders: one definition */
+input[type=range]{-webkit-appearance:none;appearance:none;display:block;
+  width:100%;height:20px;background:transparent;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--line2)}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--line2)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+  width:14px;height:14px;margin-top:-5px;border-radius:50%;background:var(--fg);
+  border:1px solid #0006;box-shadow:0 1px 3px #0009;transition:background .12s,transform .12s}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border:1px solid #0006;
+  border-radius:50%;background:var(--fg);box-shadow:0 1px 3px #0009}
+input[type=range]:hover::-webkit-slider-thumb{background:var(--amber);transform:scale(1.1)}
+input[type=range]:hover::-moz-range-thumb{background:var(--amber)}
+input[type=range]:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+
+.note{font-size:11.5px;color:var(--mute);line-height:1.55;margin:9px 0 0}
+.note-tight{margin:0 0 10px}
+.note:empty{display:none}
+.mono{font-family:var(--mono);font-size:11px;word-break:break-all}
+.empty{font-size:12px;color:var(--mute);padding:6px 0;line-height:1.6}
+.empty button{min-height:24px;margin-left:6px;padding:0 10px;font-size:11.5px}
+.err{color:var(--tally)}
+
+/* ================= stage ================= */
+.stage{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--stage)}
+
+.bar{display:flex;align-items:center;gap:14px;padding:9px 14px;min-height:52px;
+  background:var(--panel);border-bottom:1px solid var(--line);z-index:2}
+.brand{display:flex;align-items:center;gap:8px;font-weight:650;font-size:13.5px;
+  letter-spacing:.01em;white-space:nowrap}
+.brand-mark{width:16px;height:16px;border-radius:5px;
+  background:radial-gradient(circle at 50% 50%,var(--stage) 0 3px,var(--amber) 3.5px 100%)}
+.lamps{display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden}
+.lamp{display:inline-flex;align-items:center;gap:7px;height:26px;padding:0 10px;
+  border-radius:100px;background:var(--panel2);border:1px solid var(--line);
+  font-size:11.5px;color:var(--dim);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;min-width:0}
+.lamp i{width:8px;height:8px;border-radius:50%;background:var(--mute);flex:0 0 auto}
+.lamp > span{overflow:hidden;text-overflow:ellipsis}
+#connLamp{flex:0 0 auto}
+.lamp-mode{flex:0 1 auto}
+.lamp-plain:has(> span:empty){display:none}
+/* A low battery is the cause of most "the camera vanished" moments. */
+.lamp[data-batt=low]{color:var(--amber);border-color:#E9B04A99}
+.lamp[data-batt=crit]{color:var(--tally);border-color:#FC5F6499}
+/* The lever is on the camera, six feet away: say which side it is on. */
+.lamp[data-lever=video]{color:var(--tally);border-color:#FC5F6499}
+body[data-conn="1"] #connLamp{color:var(--ok);border-color:#3DD68C55}
+body[data-conn="1"] #connLamp i{background:var(--ok);box-shadow:0 0 0 3px #3DD68C2e}
+body[data-mode="webcam"] #connLamp{color:var(--blue);border-color:#5B93F555}
+body[data-mode="webcam"] #connLamp i{background:var(--blue);box-shadow:0 0 0 3px #5B93F52e}
+body[data-shooting="1"] #connLamp{color:var(--tally);border-color:#FC5F6466}
+body[data-shooting="1"] #connLamp i{background:var(--tally);box-shadow:0 0 0 3px #FC5F6433;
+  animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+.bar-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.seg{display:inline-flex;padding:2px;gap:2px;background:var(--panel2);
+  border:1px solid var(--line2);border-radius:var(--r-sm)}
+.seg button{min-height:28px;border:0;background:transparent;box-shadow:none;padding:0 12px;
+  border-radius:5px;color:var(--dim)}
+.seg button:hover:not(:disabled){background:var(--panel3);color:var(--fg)}
+.seg button[aria-pressed=true]{background:#2A2318;color:var(--amber);
+  box-shadow:0 0 0 1px #E9B04A88 inset}
+.call-look{width:210px}
+.call-note{margin:0;padding:4px 20px 8px;color:var(--dim);font-size:12px;line-height:1.4}
+
+/* The one thing to do next. A single action, not a checklist. */
+#nextStep{display:flex;align-items:center;gap:12px;margin:10px 14px 0;
+  padding:9px 13px;border-radius:var(--r);
+  border:1px solid color-mix(in srgb,var(--blue) 38%,transparent);
+  background:color-mix(in srgb,var(--blue) 9%,var(--stage))}
+.ns-dots{display:flex;gap:5px;flex:0 0 auto}
+.ns-dots i{width:7px;height:7px;border-radius:50%;
+  background:color-mix(in srgb,var(--blue) 25%,transparent)}
+.ns-dots i.done{background:var(--ok)}
+.ns-dots i.now{background:var(--blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 22%,transparent)}
+.ns-text{display:flex;align-items:baseline;gap:4px 10px;flex-wrap:wrap;min-width:0}
+.ns-stage{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+.ns-step{font-size:13.5px;font-weight:600;line-height:1.3}
+.ns-why{font-size:12px;line-height:1.45;color:var(--dim);flex-basis:100%}
+
+/* A DEFINITE single cell. With an auto row, the frame's max-height:100%
+   resolved against nothing and a portrait still spilled off the bottom of the
+   stage, which is exactly the orientation headshots are shot in. */
+.view{flex:1;position:relative;display:grid;place-items:center;overflow:hidden;min-height:0;
+  grid-template:minmax(0,1fr)/minmax(0,1fr)}
+#live,#still{grid-area:1/1;display:block;max-width:calc(100% - 28px);max-height:calc(100% - 28px);
+  object-fit:contain;border-radius:var(--r-sm);box-shadow:var(--shadow-lg)}
+#live{transform-origin:center;transition:transform .2s cubic-bezier(.2,.7,.3,1)}
+/* The frame he is CULLING, shown in the biggest area on screen. Culling is the
+   task he does most, on the most frames, and he used to do it from thumbnails. */
+#idle{grid-area:1/1;color:var(--dim);font-size:13.5px;text-align:center;padding:28px 32px;
+  line-height:1.65;max-width:440px;border:1px dashed var(--line2);border-radius:var(--r);
+  background:#0B0E13}
+
+#still{transition:filter .08s linear}
+#stageBadge{position:absolute;top:22px;left:50%;transform:translateX(-50%);
+  padding:4px 12px;border-radius:100px;background:#000c;border:1px solid var(--line2);
+  font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg);pointer-events:none}
+
+/* While the camera is connected, a frame being reviewed takes the stage and
+   this brings the live view back. */
+.live-btn{position:absolute;top:18px;right:18px;z-index:3;
+  background:#16261Ecc;border-color:#3DD68C88;color:var(--ok);font-weight:600;
+  backdrop-filter:blur(4px)}
+.live-btn::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.live-btn:hover:not(:disabled){background:#1C3327;border-color:var(--ok)}
+
+/* framing guides */
+.guide{position:absolute;inset:0;pointer-events:none;display:none}
+body[data-grid="thirds"] .guide.thirds{display:block}
+body[data-grid="center"] .guide.center{display:block}
+.thirds::before,.thirds::after{content:"";position:absolute}
+.thirds::before{inset:0 33.33%;border-left:1px solid #ffffff2e;border-right:1px solid #ffffff2e}
+.thirds::after{inset:33.33% 0;border-top:1px solid #ffffff2e;border-bottom:1px solid #ffffff2e}
+.center::before,.center::after{content:"";position:absolute;background:#E9B04A88}
+.center::before{left:50%;top:46%;width:1px;height:8%}
+.center::after{top:50%;left:46%;height:1px;width:8%}
+
+#count{position:absolute;inset:0;display:none;place-items:center;
+  background:#06080Acc;font-family:var(--mono);font-size:22vh;color:var(--amber)}
+body[data-count="1"] #count{display:grid}
+
+.deck{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;
+  background:var(--panel);border-top:1px solid var(--line)}
+.deck-sep{width:1px;height:26px;background:var(--line2);flex:0 0 auto}
+.deck-view{display:flex;gap:6px;margin-left:auto}
+.fld-inline{display:flex;align-items:center;gap:7px;margin:0}
+.fld-inline label{margin:0}
+.fld-inline select{width:74px}
+.shutter{min-width:140px;min-height:38px;padding:0 22px;font-size:14px;font-weight:650;
+  background:linear-gradient(#EE4E54,#C4353B);border-color:#F2555A;color:#fff;
+  box-shadow:0 1px 0 #ffffff2e inset,0 4px 16px #f2555a33}
+.shutter:hover:not(:disabled){background:linear-gradient(#F4636A,#D23C42);border-color:#F76A6F}
+.shutter:disabled{background:#2A181A;border-color:#FC5F6444;color:#FF7B7F;opacity:.7;box-shadow:none}
+#btnRecAudio[data-elapsed]::after{content:attr(data-elapsed);font-family:var(--mono);
+  font-size:11px;opacity:.8;margin-left:4px}
+.rec[aria-pressed=true]{background:#2E1A1D;border-color:var(--tally);color:var(--tally)}
+
+/* Browsing an old shoot while the shutter writes to today. */
+.pastwarn{display:inline-flex;align-items:center;gap:8px;padding:4px 6px 4px 11px;
+  border-radius:var(--r-sm);font-size:12px;background:#2A2318;
+  border:1px solid #E9B04A88;color:var(--fg);flex-basis:100%}
+.pastwarn button{min-height:24px;padding:0 10px;font-size:11.5px;margin-left:auto}
+
+/* ================= filmstrip ================= */
+.film{background:var(--panel);border-top:1px solid var(--line);padding:9px 14px 11px}
+.film-head{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:9px}
+.film-session{width:auto;min-width:170px;max-width:240px;font-family:var(--mono);font-size:12px}
+.film-filter{width:auto;min-width:118px}
+.count-pill{font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.count-pill:empty{display:none}
+.film-actions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.flag-pick:hover:not(:disabled){border-color:var(--ok);color:var(--ok)}
+.flag-reject:hover:not(:disabled){border-color:var(--tally);color:var(--tally)}
+
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:200px;overflow-y:auto}
+/* `.strip` is a four-column grid, so its empty message became a grid ITEM one
+   column wide and the sentence wrapped into a ragged strip: "No shots yet /
+   today. / 2026-09-21 / has 29 / frames." Span the row instead. */
+.strip .empty{grid-column:1 / -1}
+.film-strip{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;max-height:none;
+  min-height:80px;padding-bottom:4px;scroll-behavior:smooth;
+  scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.film-strip .cell{height:74px}
+.film-strip .empty{align-self:center}
+
+.strip .cell{position:relative;flex:0 0 auto;border-radius:var(--r-sm);overflow:hidden;
+  background:#000;box-shadow:var(--shadow)}
+.strip img{display:block;height:74px;width:auto;min-width:40px;cursor:pointer;
+  border-radius:var(--r-sm);outline:2px solid transparent;outline-offset:-2px;
+  transition:outline-color .12s,filter .12s,opacity .12s}
+.strip img:hover{filter:brightness(1.12)}
+.strip img[data-on="1"]{outline:3px solid var(--amber);outline-offset:-3px;filter:brightness(1.06)}
+.strip .cell b{position:absolute;left:4px;top:4px;width:10px;height:10px;border-radius:50%;
+  font-size:0;box-shadow:0 0 0 2px #06080Acc;pointer-events:none}
+.strip .cell[data-p=pick] b{background:var(--ok)}
+.strip .cell[data-p=reject] b{background:var(--tally)}
+.strip .cell[data-p=reject] img{opacity:.38}
+.strip .cell u{position:absolute;right:4px;bottom:4px;width:0;height:0;pointer-events:none;
+  border-left:8px solid transparent;border-bottom:8px solid var(--amber)}
+.strip .cell span{position:absolute;right:4px;top:4px;background:#05070Acc;color:var(--fg);
+  font-family:var(--mono);font-size:9.5px;padding:1px 5px;border-radius:3px;pointer-events:none}
+.cell[data-mark]{outline:2px solid var(--blue);outline-offset:-2px}
+/* top RIGHT: the pick dot already owns the top left corner. */
+.cell[data-mark]::after{content:"";position:absolute;right:4px;top:4px;
+  width:10px;height:10px;border-radius:50%;background:var(--blue);
+  box-shadow:0 0 0 2px rgba(0,0,0,.55);pointer-events:none}
+
+/* ================= sidebar ================= */
+.side{display:flex;flex-direction:column;min-height:0;background:var(--ink);
+  border-left:1px solid var(--line)}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:8px 10px;
+  background:var(--panel);border-bottom:1px solid var(--line)}
+.tabs button{min-height:34px;padding:0 6px;background:transparent;border:1px solid transparent;
+  box-shadow:none;color:var(--dim);font-weight:550;border-radius:var(--r-sm);position:relative}
+.tabs button:hover:not(:disabled){background:var(--panel2);color:var(--fg);border-color:transparent}
+.tabs button[aria-selected=true]{background:var(--panel2);color:var(--fg);border-color:var(--line2)}
+.tabs button[aria-selected=true]::after{content:"";position:absolute;left:30%;right:30%;bottom:3px;
+  height:2px;border-radius:2px;background:var(--amber)}
+.tabs button[data-badge]::before{content:attr(data-badge);position:absolute;top:3px;right:6px;
+  min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:var(--amber);
+  color:#150a06;font-size:9.5px;font-weight:700;line-height:15px}
+
+.panes{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:10px;
+  scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.panes::-webkit-scrollbar,.film-strip::-webkit-scrollbar{width:9px;height:9px}
+.panes::-webkit-scrollbar-thumb,.film-strip::-webkit-scrollbar-thumb{background:var(--line2);
+  border-radius:5px;border:2px solid var(--ink)}
+.pane{display:flex;flex-direction:column;gap:10px}
+
+.sec{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:13px 14px}
+.sec h2{margin:0 0 11px;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--dim);font-weight:650;display:flex;align-items:center;gap:8px}
+.sec h2::after{content:"";flex:1;height:1px;background:var(--line)}
+.h2-aside{order:2;color:var(--dim);letter-spacing:0;text-transform:none;font-weight:500;
+  font-family:var(--mono);font-size:11px}
+.sec-fold summary{list-style:none;cursor:pointer}
+.sec-fold summary::-webkit-details-marker{display:none}
+.sec-fold summary h2{margin:0}
+.sec-fold summary h2::before{content:"";width:6px;height:6px;border-right:1.5px solid var(--dim);
+  border-bottom:1.5px solid var(--dim);transform:rotate(-45deg);transition:transform .15s;margin-right:2px}
+.sec-fold[open] summary h2::before{transform:rotate(45deg)}
+.sec-fold[open] summary{margin-bottom:12px}
+
+.side-foot{border-top:1px solid var(--line);background:var(--panel);padding:9px 14px;
+  min-height:40px;max-height:150px;overflow-y:auto}
+.out{font-family:var(--mono);font-size:11.5px;color:var(--ok);word-break:break-word;
+  line-height:1.55;white-space:pre-wrap}
+.out:empty::before{content:"Ready.";color:var(--mute)}
+.out.err{color:var(--tally)}
+.out a{color:inherit;text-underline-offset:2px}
+.out .hint{color:var(--amber);margin-top:4px}
+.export-downloads{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.export-downloads a{display:block;padding:9px 11px;min-height:44px;border:1px solid var(--line2);
+  border-radius:var(--r-sm);color:var(--ok);overflow-wrap:anywhere}
+
+/* ---- camera settings rows ---- */
+/* minmax on the slider column, and a shrinkable value column. With a plain
+   1fr the slider collapsed to ZERO WIDTH whenever the label and value text
+   overflowed: "White balance"/"Automatic" and "Quality"/"JPEG Normal" made
+   four of the seven sliders undraggable. Caught by the layout probe. */
+.grid2{display:grid;grid-template-columns:1fr;gap:0}
+.cs-row{display:grid;
+  grid-template-columns:minmax(0,88px) minmax(70px,1fr) minmax(0,auto);
+  align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid #1C232D}
+.cs-row:last-child{border-bottom:0}
+.cs-row:has(.cs-ro){grid-template-columns:minmax(0,88px) 1fr}
+.cs-name{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cs-val{font-family:var(--mono);font-size:11.5px;color:var(--fg);text-align:right;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:104px;min-width:44px}
+.cs-val.cs-changed{color:var(--amber)}
+.cs-val.cs-ro{color:var(--dim);max-width:none}
+.cs-val.cs-busy{opacity:.45}
+
+.notice{margin-top:10px;padding:9px 11px;border-radius:var(--r-sm);
+  background:rgba(233,176,74,.10);border:1px solid #E9B04A88;
+  color:var(--fg);font-size:12px;line-height:1.5}
+.notice+.notice{margin-top:7px}
+/* An export about to go out ungraded. Above the button, so it is read
+   before the click, with the fix one press away. */
+.grade-note{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+.grade-note span{flex:1;min-width:0}
+.grade-note button{flex:0 0 auto}
+.notice+.note{margin-top:7px}
+.notice i{color:var(--dim);font-style:normal}
+.notice.lt-good{background:rgba(61,214,140,.10);border-color:#3DD68C88}
+/* A setting he fixed BY HAND and that is still right. Never rendered in the
+   warnings box: a green line in a red box teaches him to stop reading both. */
+.confirm{margin:8px 0 0;padding:8px 10px;border-radius:var(--r-sm);
+  border:1px solid color-mix(in srgb,var(--ok) 40%,transparent);
+  background:color-mix(in srgb,var(--ok) 10%,transparent);
+  color:var(--ok);font-size:12px;line-height:1.5;white-space:pre-wrap}
+
+/* ---- look sliders ---- */
+.sliders{display:grid;grid-template-columns:1fr;gap:2px;margin:4px 0 2px}
+.sld{padding:3px 0}
+.sld-tight{margin-top:10px}
+.sld .top{display:flex;justify-content:space-between;align-items:baseline}
+.sld label{font-size:12px;color:var(--dim)}
+.sld .reset-value{font-family:var(--mono);font-size:11.5px;color:var(--fg);font-variant-numeric:tabular-nums;
+  min-width:44px;min-height:32px;padding:0 6px;background:transparent;border-color:transparent;box-shadow:none}
+.sld[data-moved] .reset-value{color:var(--amber)}
+#lightOut{margin:0 0 11px}
+#autoWhy{color:var(--dim)}
+
+#hist{display:block;width:100%;height:88px;background:#0A0D11;border:1px solid var(--line);
+  border-radius:var(--r-sm)}
+
+/* ---------- crop ---------- */
+#cropWrap{position:relative;width:100%;background:#000;border:1px solid var(--line);
+  border-radius:var(--r-sm);overflow:hidden;min-height:80px;display:grid;place-items:center;
+  user-select:none;touch-action:none;margin-bottom:4px}
+#cropImg{max-width:100%;max-height:320px;display:block;pointer-events:none}
+#cropImg:not([src]){display:none}
+#cropBox{position:absolute;border:1px solid var(--amber);cursor:move;
+  box-shadow:0 0 0 9999px rgba(6,8,10,.62)}
+#cropBox i{position:absolute;width:14px;height:14px;background:var(--amber);
+  border-radius:3px;font-style:normal}
+#cropBox i[data-h=nw]{left:-7px;top:-7px;cursor:nwse-resize}
+#cropBox i[data-h=ne]{right:-7px;top:-7px;cursor:nesw-resize}
+#cropBox i[data-h=sw]{left:-7px;bottom:-7px;cursor:nesw-resize}
+#cropBox i[data-h=se]{right:-7px;bottom:-7px;cursor:nwse-resize}
+
+/* ---- tables: lighting and rank ---- */
+.lt{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:9px}
+.lt td{padding:5px 6px;border-bottom:1px solid var(--line)}
+.lt td:first-child{color:var(--dim)}
+.lt td:nth-child(2){text-align:right;font-family:var(--mono)}
+.lt td:last-child{text-align:right;font-weight:600}
+.lt-ok{color:var(--ok)} .lt-no{color:var(--amber)}
+.rk{margin-top:8px}
+.rk tr{cursor:pointer}
+.rk tr:hover td{background:var(--panel3)}
+.rk td:first-child{color:var(--dim);width:28px;text-align:right}
+.rk td:nth-child(2){font-family:var(--mono);text-align:left}
+#rankOut{max-height:420px;overflow:auto}
+
+/* ---- audio takes ---- */
+#takes{max-height:300px;overflow:auto}
+#takes:empty{display:none}
+#takes:not(:empty) + #takesEmpty{display:none}
+.tk-h{font-size:11px;color:var(--dim);margin:0 0 4px}
+.tk-row{display:grid;grid-template-columns:1fr auto;gap:4px 8px;
+  align-items:center;padding:7px 0;border-top:1px solid var(--line)}
+.tk-name{font-family:var(--mono);font-size:11.5px;color:var(--fg);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tk-len{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;color:var(--mute)}
+.tk-play,.tk-del{min-height:26px;padding:0 10px;font-size:11.5px}
+.tk-del:hover:not(:disabled){background:#2E1A1D;border-color:var(--tally);color:var(--tally)}
+.tk-row audio{grid-column:1 / -1;width:100%;height:32px;margin-top:4px}
+
+/* ================= overlays ================= */
+.toast{position:fixed;left:calc((100% - var(--side-w)) / 2);bottom:196px;
+  transform:translateX(-50%) translateY(8px);max-width:min(560px,80vw);
+  background:var(--fg);color:var(--ink);font-size:12.5px;font-weight:500;padding:9px 16px;
+  border-radius:100px;opacity:0;pointer-events:none;z-index:70;box-shadow:var(--shadow-lg);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:opacity .16s ease,transform .16s ease}
+.toast.is-on{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.is-bad{background:var(--tally);color:#150a06}
+
+#toolWarn{position:fixed;top:0;left:0;right:0;z-index:80;background:#E5484D;color:#fff;
+  font-size:12px;padding:8px 14px;text-align:center;line-height:1.6}
+#toolWarn code{background:#0003;padding:1px 5px;border-radius:3px}
+
+#player,#loupe,#keys{position:fixed;inset:0;z-index:60;background:#05070Aee;
+  backdrop-filter:blur(6px);display:grid;place-items:center}
+#player,#loupe{gap:10px;grid-template-rows:1fr auto}
+#keys{z-index:70}
+#playerVid{max-width:92vw;max-height:74vh;background:#000;border:1px solid var(--line2);
+  border-radius:var(--r);box-shadow:var(--shadow-lg);align-self:end}
+#playerBar{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 16px 18px;
+  font-size:12px;color:var(--dim);text-align:center}
+#playerName{font-family:var(--mono);font-size:11.5px;color:var(--fg)}
+#trimRow,#trimRow2{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap}
+#trimTxt{font-family:var(--mono);margin:0 6px;color:var(--fg)}
+#trimOut{font-family:var(--mono);font-size:11.5px;min-height:17px}
+.chk-sm{min-height:var(--ctl)}
+.player-hint{font-size:11px;color:var(--mute)}
+#keysBox{background:var(--panel);border:1px solid var(--line2);border-radius:var(--r);
+  padding:20px 26px;min-width:320px;box-shadow:var(--shadow-lg)}
+#keysBox h3{margin:0 0 12px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+#keysTbl{border-collapse:collapse;font-size:12.5px}
+#keysTbl td{padding:4px 0}
+#keysTbl td:first-child{font-family:var(--mono);color:var(--amber);padding-right:22px;white-space:nowrap}
+#loupeImg{max-width:92vw;max-height:80vh;border:1px solid var(--line);border-radius:var(--r-sm);
+  background:#000;align-self:end}
+#loupeBar{font-family:var(--mono);font-size:11px;color:var(--mute);padding-bottom:16px}
+
+#dlg{padding:0;border:1px solid var(--line2);border-radius:var(--r);background:var(--panel);
+  color:var(--fg);width:min(440px,92vw);box-shadow:var(--shadow-lg)}
+#dlg::backdrop{background:#05070Acc;backdrop-filter:blur(4px)}
+#dlgForm{padding:18px 20px 16px;display:flex;flex-direction:column;gap:12px}
+#dlgTitle{margin:0;font-size:15px;font-weight:650}
+#dlgBody{font-size:12.5px;color:var(--dim);white-space:pre-wrap;line-height:1.55;
+  max-height:40vh;overflow:auto}
+#dlgBody:empty{display:none}
+.dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+
+/* ================= narrow windows ================= */
+@media (max-width:1180px){
+  :root{--side-w:340px}
+  .brand{display:none}
+  .call-look{width:170px}
+}
+@media (max-width:900px){
+  /* One column, and the page scrolls: squeezing the sidebar into 46vh left a
+     letterbox of controls nobody could use. */
+  body{grid-template-columns:minmax(0,1fr);overflow:auto;height:auto;min-height:100%;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right)
+      env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  .stage{height:auto}
+  .view{min-height:52vh}
+  .side{border-left:0;border-top:1px solid var(--line)}
+  .panes{overflow:visible}
+  .tabs{position:sticky;top:env(safe-area-inset-top);z-index:10}
+  .toast{left:50%;bottom:24px}
+  .bar{flex-wrap:wrap}
+  .bar-right{margin-left:0;flex:1 1 100%}
+  .call-look{flex:1;width:auto}
+  .deck-view{margin-left:0}
+}
+
+/* Phone browsers and Home Screen windows: respect the notch, keep controls
+   easy to tap, and avoid Safari zooming the page when a field is focused. */
+@media (max-width:600px), (max-width:1000px) and (pointer:coarse){
+  :root{--ctl:44px}
+  .side{min-width:0}
+  .bar-right{display:grid;grid-template-columns:minmax(0,1fr) 44px;width:100%}
+  .bar-right .seg{grid-column:1;grid-row:1;justify-self:start}
+  .bar-right .icon-btn{grid-column:2;grid-row:1}
+  .call-look{grid-column:1 / -1;grid-row:2;min-width:0;width:100%}
+  .seg button,.tabs button,.sld .reset-value,.empty button,.pastwarn button,.tk-play,.tk-del{min-height:44px}
+  .icon-btn{min-width:44px;min-height:44px}
+  input:not([type=range]):not([type=checkbox]),select{font-size:16px;min-width:0}
+  .row{flex-wrap:wrap}
+  .row > select,.row > input{flex:1 1 120px;min-width:0}
+  .shutter{min-height:48px}
+  .view{min-height:38svh}
+  .film-actions{margin-left:0}
+  .cs-row{grid-template-columns:minmax(0,76px) minmax(60px,1fr) minmax(0,auto);gap:8px}
+  input[type=range]{height:36px}
+  input[type=range]::-webkit-slider-thumb{width:22px;height:22px;margin-top:-9px}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px}
+  .toast{bottom:calc(16px + env(safe-area-inset-bottom))}
+  #cropBox i{width:44px;height:44px;background:transparent}
+  #cropBox i::after{content:"";position:absolute;inset:13px;background:var(--amber);border-radius:5px}
+  #cropBox i[data-h=nw]{left:0;top:0}
+  #cropBox i[data-h=ne]{right:0;top:0}
+  #cropBox i[data-h=sw]{left:0;bottom:0}
+  #cropBox i[data-h=se]{right:0;bottom:0}
+}
+
+/* Opens the YouTube recorder (/record) in its own window. */
+.rec-link { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 6px;
+  border: 1px solid #c4373c; color: #ff8a8e; text-decoration: none; font-weight: 600; white-space: nowrap; }
+.rec-link:hover { background: rgba(196, 55, 60, .15); }

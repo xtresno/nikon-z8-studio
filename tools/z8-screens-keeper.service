@@ -1,0 +1,12 @@
+[Unit]
+Description=Keep the studio screen layout (Elgato Prompter below the two monitors)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/python3 %h/bin/z8-studio/tools/screens-keeper.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

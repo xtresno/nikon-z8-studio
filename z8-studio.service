@@ -1,0 +1,18 @@
+[Unit]
+Description=Z8 Studio tethered capture and export
+After=graphical-session.target
+# These belong in [Unit]. In [Service] systemd IGNORES them, and the effective
+# window was the 10s default rather than the 120s intended. The camera is USB,
+# so a crash loop hammering it is worse than being down for a moment.
+StartLimitBurst=5
+StartLimitIntervalSec=120
+
+[Service]
+Type=simple
+ExecStart=%h/bin/z8-studio/target/release/z8-studio
+# Come back from anything except a clean stop.
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
