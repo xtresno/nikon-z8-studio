@@ -1,6 +1,7 @@
 # Z8 Studio
 
-Tethered capture, editing and export for a Nikon Z8 on Linux.
+Tethered capture, editing and export for a Nikon Z8 on Linux, and on Windows
+through WSL2 ([setup](docs/WINDOWS-WSL2.md)).
 
 Plug the camera in by USB and get live view, remote shooting, a fast photo
 editor and exporter, a video recorder with a teleprompter, and a webcam feed,

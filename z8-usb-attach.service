@@ -1,0 +1,12 @@
+[Unit]
+Description=Attach the Nikon Z8 from Windows into WSL (usbipd auto-attach)
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart="/mnt/c/Program Files/usbipd-win/usbipd.exe" attach --wsl --hardware-id 04b0:0451 --auto-attach
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
