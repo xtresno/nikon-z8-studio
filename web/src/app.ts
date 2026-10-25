@@ -247,6 +247,17 @@ async function api<P extends keyof Routes>(path: P, body?: object,
   } finally { clearTimeout(timer); }
 }
 
+/** "3 / 10 · 40 s left": the rate so far, measured from the page's own
+    clock (a 45 MP frame takes seconds on a laptop, under one on the desktop,
+    so no fixed number fits). Says nothing until the first item is done. */
+function progressText(t0: number, done: number, total: number): string {
+  const head = `${done} / ${total}`;
+  if (!done || done >= total) return head;
+  const left = (Date.now() - t0) / done * (total - done) / 1000;
+  return `${head} · ${left < 60 ? Math.max(1, Math.round(left)) + " s"
+                                : Math.round(left / 60) + " min"} left`;
+}
+
 /** A background job's progress. */
 async function job(id: string): Promise<JobState> {
   const r = await fetch("/api/job?id=" + encodeURIComponent(id));
@@ -1448,11 +1459,12 @@ async function exportSelected(){
     btn.disabled = false;
     btn.classList.add("busy");
     let st = {} as JobState;
+    const t0 = Date.now();
     try {
       for (let i = 0; i < 6000; i++) {
         st = await job(r.job);
         if (btn.textContent !== "Cancelling…")
-          btn.textContent = `${st.done || 0} / ${st.total}  cancel`;
+          btn.textContent = `${progressText(t0, st.done || 0, st.total)}  cancel`;
         if (st.state !== "running") break;
         await sleep(400);
       }
@@ -2167,6 +2179,7 @@ $("#btnExportAll").addEventListener("click", async () => {
      picks_only: $("#picksOnly").checked});
   if (!start.ok) return flash($("#exportOut"), start.error, true);
   exportJob = start.job;
+  const t0 = Date.now();
   btn.classList.add("busy");
   btn.textContent = `0 / ${start.total}  cancel`;
 
@@ -2183,7 +2196,7 @@ $("#btnExportAll").addEventListener("click", async () => {
     }
     if (j.state === "running") {
       btn.textContent = `${j.done} / ${j.total}  cancel`;
-      $("#exportOut").textContent = `rendering ${j.done} of ${j.total}…`;
+      $("#exportOut").textContent = `rendering ${progressText(t0, j.done, j.total)}…`;
       $("#exportOut").style.color = "var(--dim)";
       continue;
     }
@@ -2842,6 +2855,7 @@ $("#btnCardImport").addEventListener("click", async () => {
   if (!start.ok) { $("#cardNote").textContent = start.error || "";
                    $("#cardNote").style.color = "var(--tally)"; return; }
   importJob = start.job;
+  const t0 = Date.now();
   btn.classList.add("busy");
   btn.textContent = `0 / ${start.total}  cancel`;
   $("#cardNote").style.color = "var(--dim)";
@@ -2857,7 +2871,7 @@ $("#btnCardImport").addEventListener("click", async () => {
     }
     if (j.state === "running") {
       btn.textContent = `${j.done} / ${j.total}  cancel`;
-      $("#cardNote").textContent = `importing ${j.done} of ${j.total}…`;
+      $("#cardNote").textContent = `importing ${progressText(t0, j.done, j.total)}…`;
       continue;
     }
     const n = (j.results || []).length, e = (j.errors || []).length;
