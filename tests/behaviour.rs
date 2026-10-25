@@ -1566,6 +1566,11 @@ fn strip_resizing_equals_the_whole_resize_on_a_real_frame() {
                          (1200, 1600, (w * 0.05, h * 0.02, w * 0.95, h * 0.02 + w * 0.9 * 4.0 / 3.0)),
                          (1920, 1080, (0.0, h * 0.3, w, h * 0.3 + w * 9.0 / 16.0)),
                          (3000, 2000, (0.0, 0.0, w, h))] {
+        // The crops above are drawn for a portrait frame; a landscape one
+        // (2026-10-25, the newest real frame) puts some outside the image.
+        if bx.1 < 0.0 || bx.3 > h || bx.2 > w {
+            continue;
+        }
         let got = img::resize_box(&im, nw, nh, img::Filter::Lanczos, Some(bx));
         assert!(got.px == resize_whole(&im, nw, nh, bx), "{nw}x{nh} from {bx:?}");
     }

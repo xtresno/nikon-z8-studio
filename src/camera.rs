@@ -330,7 +330,7 @@ impl Camera {
 
     /// Fire the shutter and pull the file down. (ok, name or error).
     pub fn shoot(&self, dest: &Path, focus: Option<bool>) -> Result<(bool, String), Busy> {
-        let raw_path = self.held(45.0, "the capture", |c| -> Result<PathBuf, String> {
+        let raw_path = self.held(45.0, "the capture", |c| -> Result<(PathBuf, Vec<PathBuf>), String> {
             if c.borrow().is_none() {
                 return Err("not connected".into());
             }
@@ -386,14 +386,30 @@ impl Camera {
             // Staged, then renamed: the strip polls this folder, and a frame
             // listed half-written fails to decode under its real name.
             store::write_atomic(&raw_path, &data).map_err(|e| e.to_string())?;
-            Ok(raw_path)
+            // RAW+JPEG: the other half of the pair, under the same stem.
+            let mut extra = Vec::new();
+            for (f, n) in s.added_files(400, 5000) {
+                let e = store::splitext(&n).1.to_lowercase();
+                if (f == folder && n == name) || e.is_empty() || e == ext {
+                    continue;
+                }
+                let p = dest.join(format!("{base}{e}"));
+                match s.file_get(&f, &n)
+                    .and_then(|d| store::write_atomic(&p, &d).map_err(|e| e.to_string())) {
+                    Ok(()) => extra.push(p),
+                    Err(e) => eprintln!("[z8] pair file {f}/{n}: {e}"),
+                }
+            }
+            Ok((raw_path, extra))
         })?;
-        let raw_path = match raw_path {
+        let (raw_path, extra) = match raw_path {
             Ok(p) => p,
             Err(e) => return Ok((false, e)),
         };
+        // In a pair the strip lists the raw, so the raw is the frame named.
+        let main = extra.iter().map(|p| normalise(p)).find(|p| crate::load::is_raw(p));
         // The camera reports a .nef name even when it emits HEIF.
-        let real = normalise(&raw_path);
+        let real = main.unwrap_or_else(|| normalise(&raw_path));
         let he = real.to_string_lossy().to_lowercase().ends_with(".nef") && nef_is_high_efficiency(&real);
         // Develop a raw in the background now, so opening it is instant; the
         // strip shows its embedded JPEG until then. HE raws cannot develop.

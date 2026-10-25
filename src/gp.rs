@@ -285,6 +285,32 @@ impl Session {
         }
     }
 
+    /// Files the camera announces after a capture: in RAW+JPEG the capture
+    /// call returns only the JPEG, and the NEF arrives as a FILE_ADDED event
+    /// (measured 2026-10-25: the NEF was never downloaded). Stops at the
+    /// first quiet `wait_ms`, or after `max_ms` in all.
+    pub fn added_files(&self, wait_ms: c_int, max_ms: u64) -> Vec<(String, String)> {
+        const GP_EVENT_TIMEOUT: c_int = 1;
+        const GP_EVENT_FILE_ADDED: c_int = 2;
+        let end = std::time::Instant::now() + std::time::Duration::from_millis(max_ms);
+        let mut out = Vec::new();
+        while std::time::Instant::now() < end {
+            let (mut t, mut data): (c_int, *mut c_void) = (GP_EVENT_TIMEOUT, std::ptr::null_mut());
+            let r = unsafe { gp_camera_wait_for_event(self.cam, wait_ms, &mut t, &mut data, self.ctx) };
+            if t == GP_EVENT_FILE_ADDED && !data.is_null() {
+                let p = unsafe { &*(data as *const CameraFilePath) };
+                out.push((from_c(p.folder.as_ptr()), from_c(p.name.as_ptr())));
+            }
+            if !data.is_null() {
+                unsafe { libc::free(data) };
+            }
+            if r < 0 || t == GP_EVENT_TIMEOUT {
+                break;
+            }
+        }
+        out
+    }
+
     pub fn list_folders(&self, folder: &str) -> GpResult<Vec<String>> {
         self.list(folder, false)
     }
