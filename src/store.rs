@@ -617,12 +617,19 @@ pub fn write_atomic(fin: &Path, bytes: &[u8]) -> std::io::Result<()> {
     r
 }
 
-pub fn atomic_replace(tmp: &Path, fin: &Path) -> std::io::Result<()> {
-    match std::fs::rename(tmp, fin) {
+pub fn atomic_replace(staged: &Path, fin: &Path) -> std::io::Result<()> {
+    match std::fs::rename(staged, fin) {
         Ok(()) => Ok(()),
+        // Another filesystem: copy to a staging name beside the destination,
+        // then rename there, so the real name still never shows a partial file.
         Err(e) if e.raw_os_error() == Some(libc::EXDEV) => {
-            std::fs::copy(tmp, fin)?;
-            std::fs::remove_file(tmp)
+            let tmp = staging_path(fin);
+            let r = std::fs::copy(staged, &tmp).and_then(|_| std::fs::rename(&tmp, fin));
+            if r.is_err() {
+                let _ = std::fs::remove_file(&tmp);
+            }
+            r?;
+            std::fs::remove_file(staged)
         }
         Err(e) => Err(e),
     }

@@ -69,17 +69,10 @@ const IDENT: [u8; 256] = {
     t
 };
 
-/// Darken the corners. The gradient is raised to a power so the face stays
-/// flat and the falloff lives out near the corners.
-pub fn apply_vignette(im: &Rgb, amount: f64) -> Rgb {
-    if amount == 0.0 {
-        return im.clone();
-    }
-    img::darken_by_mask_owned(im.clone(), &vignette_mask(im.w, im.h, amount))
-}
-
 /// The vignette mask for one size and strength, kept: rebuilding it (a
 /// resize to the full frame, then a lookup) cost more than applying it.
+/// The gradient is raised to a power so the face stays flat and the falloff
+/// lives out near the corners.
 fn vignette_mask(w: usize, h: usize, amount: f64) -> std::sync::Arc<Gray> {
     type Masks = Vec<((usize, usize, u64), std::sync::Arc<Gray>)>;
     static MASKS: parking_lot::Mutex<Masks> = parking_lot::Mutex::new(Vec::new());

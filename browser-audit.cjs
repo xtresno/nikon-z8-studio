@@ -23,7 +23,16 @@ const B = process.env.Z8_BASE || "http://127.0.0.1:8420";
 const OUT = process.env.Z8_AUDIT_OUT || require("os").tmpdir();
 const SESSION = "1999-02-02";
 const ROOT = process.env.Z8_ROOT || path.join(process.env.HOME, "Pictures/z8-studio");
-const SRC = path.join(ROOT, "2026-09-21");
+// The frames to copy: Z8_AUDIT_SRC, else the 2026-09-21 headshot session, else
+// (a machine without it, like a fresh laptop) the newest session holding at
+// least five camera JPEGs (with three, a later step waits for a frame that is not there).
+const SRC = process.env.Z8_AUDIT_SRC || (() => {
+  const want = path.join(ROOT, "2026-09-21");
+  if (fs.existsSync(want)) return want;
+  const jpgs = d => { try { return fs.readdirSync(path.join(ROOT, d)).filter(f => /^\d{8}-\d{6}\.jpg$/.test(f)); } catch (_) { return []; } };
+  const days = fs.existsSync(ROOT) ? fs.readdirSync(ROOT).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d) && jpgs(d).length >= 5).sort() : [];
+  return days.length ? path.join(ROOT, days[days.length - 1]) : want;
+})();
 const results = [];
 const bench = {};
 let fails = 0;
@@ -49,7 +58,7 @@ async function until(fn, ms = 8000, step = 50) {
   await api("/api/session", { date: SESSION });
   const sd = (await api("/api/state")).dir;
   fs.mkdirSync(sd, { recursive: true });
-  const real = fs.readdirSync(SRC).filter(f => f.endsWith(".jpg")).sort().slice(-6);
+  const real = fs.readdirSync(SRC).filter(f => f.endsWith(".jpg") && !f.endsWith(".dev.jpg")).sort().slice(-6);
   real.forEach(f => fs.copyFileSync(path.join(SRC, f), path.join(sd, f)));
   execFileSync("ffmpeg", ["-v", "error", "-f", "lavfi", "-i", "testsrc2=size=1280x720:rate=30:duration=6",
     "-f", "lavfi", "-i", "sine=frequency=440:duration=6", "-c:v", "libx264", "-g", "30", "-pix_fmt", "yuv420p",
@@ -528,7 +537,12 @@ async function until(fn, ms = 8000, step = 50) {
     ok("no failed requests", !badResponses.length, badResponses.slice(0, 4).join(" | "));
     await browser.close();
     await api("/api/session", { date: was });
-    fs.rmSync(sd, { recursive: true, force: true });
+    // A background prefetch or export started by the audit can still be
+    // finishing and recreate the folder's exports/ after the first removal.
+    for (let i = 0; i < 20 && fs.existsSync(sd); i++) {
+      fs.rmSync(sd, { recursive: true, force: true });
+      await sleep(250);
+    }
     const after = await api("/api/state");
     ok("the real session is back", after.session === was, after.session);
     ok("the config is untouched", JSON.stringify(after.config) === cfgWas);

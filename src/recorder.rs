@@ -172,7 +172,7 @@ fn sync_copy(video: &std::path::Path, wav: &std::path::Path, h264: bool) -> Opti
     let line = String::from_utf8_lossy(&o.stdout).lines().last().unwrap_or("").to_string();
     let stats: Value = serde_json::from_str(&line).ok()?;
     if o.status.success() && stats["ok"].as_bool() == Some(true) && out.is_file() {
-        let _ = std::fs::write(out.with_extension("sync.json"), &line);
+        let _ = crate::store::write_atomic(&out.with_extension("sync.json"), line.as_bytes());
         Some(stats)
     } else {
         let _ = std::fs::remove_file(&out);

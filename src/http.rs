@@ -640,9 +640,12 @@ fn prefetch(q: &HashMap<String, String>) -> Out {
     let full = q.get("full").map(|v| v == "1").unwrap_or(false);
     static FULL_RUNNING: AtomicUsize = AtomicUsize::new(0);
     let (counter, cap) = if full { (&FULL_RUNNING, 1) } else { (&RUNNING, 2) };
+    // Busy is not an error: a prefetch is only a hint, and the page ignores
+    // the reply. A 429 here put a red "Failed to load resource" in the
+    // console for every skipped hint (browser audit on a laptop, 2026-10-25).
     if counter.fetch_add(1, Ordering::SeqCst) >= cap {
         counter.fetch_sub(1, Ordering::SeqCst);
-        return text(429, "busy");
+        return text(202, "skipped, busy");
     }
     std::thread::spawn(move || {
         if full {

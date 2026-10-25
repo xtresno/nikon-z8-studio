@@ -692,6 +692,14 @@ def ui_endpoints_exist():
     """
     print("\nui endpoints")
     ui = page_source()
+    # The other pages call the server too: the recorder, the prompter and the
+    # videos page. Without them their routes all read as orphans.
+    for f in ("web/record.html", "web/src/record.ts", "web/prompter.html",
+              "web/src/prompter.ts", "web/videos.html"):
+        try:
+            ui += open(os.path.join(HERE, f), encoding="utf-8").read()
+        except OSError:
+            pass
     srv = open(os.path.join(HERE, "src", "http.rs"), encoding="utf-8").read()
     called = set(_re.findall(r'["`](/(?:api|img|clip|take|export)[^"`?]*)', ui))
     called |= set(_re.findall(r'["`](/[a-z.]+\.mjpg)', ui))
@@ -705,6 +713,8 @@ def ui_endpoints_exist():
               r.status == 200 and r.read(8) == b"\x89PNG\r\n\x1a\n")
     # Match arms ("/api/x" => ..., "/a" | "/b" => ...) and prefix routes.
     served = set(_re.findall(r'"(/[a-z0-9./-]+)"\s*(?:=>|\|)', srv))
+    # Routed before the match, by an if: path == "/api/rec-chunk".
+    served |= set(_re.findall(r'path == "(/[a-z0-9./-]+)"', srv))
     served |= set(_re.findall(r'strip_prefix\("(/[a-z]+/)"\)', srv))
     served |= {c for c in called if any(c.startswith(p) for p in served
                                         if p.endswith("/"))}
@@ -732,7 +742,10 @@ def ui_endpoints_exist():
                       "/api/all-settings",
                       # Fetched by a <link> and a <script src>, not by code,
                       # so a scan for api("...") calls cannot see them.
-                      "/app.js", "/app.css"}
+                      "/app.js", "/app.css",
+                      # Lens drive and focus point, for scripts and Claude
+                      # over HTTP (a61d6a7, 2026-10-06); no page button.
+                      "/api/focus", "/api/af-area"}
     orphans = sorted(x for x in served
                      if x not in called and x not in KNOWN_API_ONLY
                      and not any(c.startswith(x) for c in called))
@@ -897,35 +910,57 @@ def preflight():
           sysd(["show", "z8-studio.service", "-p",
                 "StartLimitIntervalUSec", "--value"]) == "2min")
 
+    # Windows (WSL2): no desktop, no v4l2loopback, no webcam feed; the camera
+    # arrives through usbipd instead (docs/WINDOWS-WSL2.md).
+    try:
+        wsl = "microsoft" in open("/proc/sys/kernel/osrelease").read().lower()
+    except OSError:
+        wsl = False
+    if wsl:
+        check("the usbipd attach service is enabled at login",
+              sysd(["is-enabled", "z8-usb-attach.service"]) == "enabled")
+        check("and it is running",
+              sysd(["is-active", "z8-usb-attach.service"]) == "active")
+
     # gvfs claims the camera the instant it appears, and it has to be stopped
     # BOTH ways: the unit alone is not enough, D-Bus will activate it again.
-    check("gvfs camera monitor is masked",
-          sysd(["is-enabled", "gvfs-gphoto2-volume-monitor.service"]) == "masked")
-    check("and its D-Bus activation is overridden too",
-          os.path.exists(os.path.join(
-              home, ".local/share/dbus-1/services/"
-                    "org.gtk.vfs.GPhoto2VolumeMonitor.service")))
+    # Not installed at all (WSL, a server) means nothing can claim it.
+    # A masked unit is still listed; one that is not installed is not.
+    if "gvfs-gphoto2-volume-monitor" not in sysd(
+            ["list-unit-files", "gvfs-gphoto2-volume-monitor.service"]):
+        skip("gvfs camera monitor", "not installed, so it cannot claim the camera")
+    else:
+        check("gvfs camera monitor is masked",
+              sysd(["is-enabled", "gvfs-gphoto2-volume-monitor.service"]) == "masked")
+        check("and its D-Bus activation is overridden too",
+              os.path.exists(os.path.join(
+                  home, ".local/share/dbus-1/services/"
+                        "org.gtk.vfs.GPhoto2VolumeMonitor.service")))
 
-    try:
-        mods = open("/proc/modules").read()
-    except OSError:
-        mods = ""
-    check("v4l2loopback is loaded, so Zoom and OBS have a camera",
-          "v4l2loopback" in mods)
-    check("/dev/video10 exists", os.path.exists("/dev/video10"))
-    autoload = any("v4l2loopback" in open(f, encoding="utf-8",
-                                          errors="ignore").read()
-                   for f in glob.glob("/etc/modules-load.d/*.conf")) \
-        if glob.glob("/etc/modules-load.d/*.conf") else False
-    check("and it comes back after a reboot", autoload)
+    if wsl:
+        skip("webcam feed and desktop launcher",
+             "WSL2: no v4l2loopback in its kernel and no GNOME desktop")
+    else:
+        try:
+            mods = open("/proc/modules").read()
+        except OSError:
+            mods = ""
+        check("v4l2loopback is loaded, so Zoom and OBS have a camera",
+              "v4l2loopback" in mods)
+        check("/dev/video10 exists", os.path.exists("/dev/video10"))
+        autoload = any("v4l2loopback" in open(f, encoding="utf-8",
+                                              errors="ignore").read()
+                       for f in glob.glob("/etc/modules-load.d/*.conf")) \
+            if glob.glob("/etc/modules-load.d/*.conf") else False
+        check("and it comes back after a reboot", autoload)
 
-    for f in ("bin/z8-studio.sh", "bin/z8-webcam.sh", "bin/mtplvcap"):
-        fp = os.path.join(home, f)
-        check(f"{os.path.basename(f)} is present and executable",
-              os.path.isfile(fp) and os.access(fp, os.X_OK))
-    check("the GNOME launcher is installed",
-          os.path.exists(os.path.join(
-              home, ".local/share/applications/z8-studio.desktop")))
+        for f in ("bin/z8-studio.sh", "bin/z8-webcam.sh", "bin/mtplvcap"):
+            fp = os.path.join(home, f)
+            check(f"{os.path.basename(f)} is present and executable",
+                  os.path.isfile(fp) and os.access(fp, os.X_OK))
+        check("the GNOME launcher is installed",
+              os.path.exists(os.path.join(
+                  home, ".local/share/applications/z8-studio.desktop")))
 
     # The server is the Rust binary, linked against libgphoto2 directly. A
     # fresh clone or a `cargo clean` leaves the units pointing at nothing.
@@ -934,6 +969,8 @@ def preflight():
         exe = os.path.join(HERE, "target", "release", binary)
         check(f"{binary} is built", os.path.isfile(exe) and os.access(exe, os.X_OK),
               "cargo build --release" if not os.path.isfile(exe) else exe)
+        if wsl and unit == "z8-feed.service":
+            continue                      # the webcam keeper's unit, desktop only
         deployed = os.path.join(home, "bin", "z8-studio", "target", "release", binary)
         check(f"and {unit} runs the deployed binary",
               deployed in sysd(["show", unit, "-p", "ExecStart", "--value"]))
@@ -2321,7 +2358,9 @@ def an_export_is_never_half_written_under_its_real_name():
     # Every write of a file someone else reads goes to a staging name first.
     # The only direct writes left are to paths that ARE staging names.
     direct = [l.strip() for l in src_txt.splitlines()
-              if _re.search(r"fs::(write|copy)\(&?(?!tmp\b)\w", l)
+              if (_re.search(r"fs::write\(&?(?!tmp\b)\w", l)
+                  # copy(from, to): the DESTINATION is the second argument
+                  or _re.search(r"fs::copy\([^,]+,\s*&?(?!tmp\b)\w", l))
               and "atomic" not in l and not l.strip().startswith("//")]
     check("nothing saves straight to the destination path", not direct,
           "; ".join(direct)[:120] or "every write is staged")
@@ -3111,8 +3150,9 @@ def nothing_is_defined_and_never_called():
     # The same audit for the page.
     js = page_script()
     jnames = set(_re.findall(r"^(?:async )?function (\w+)\(", js, _re.M))
+    # A call OR a reference: setInterval(liveWatchdog, 3000) uses it too.
     jdead = [n for n in sorted(jnames)
-             if len(_re.findall(r"\b" + _re.escape(n) + r"\s*\(", js)) - 1 <= 0]
+             if len(_re.findall(r"\b" + _re.escape(n) + r"\b", js)) <= 1]
     check(f"and every one of {len(jnames)} functions in app.ts is called",
           not jdead, ", ".join(jdead) or "none orphaned")
 
@@ -3343,9 +3383,15 @@ def a_turned_body_is_portrait():
         ex[0x0112] = 8                      # "Rotate 270 CW", as the Z8 wrote
         Image.new("RGB", (8256, 5504), (120, 100, 90)).save(
             fp, "JPEG", quality=60, exif=ex.tobytes())
-        check("the page is told how far to turn the live view",
-              api("/api/state").get("liveTurn") == 270,
-              str(api("/api/state").get("liveTurn")))
+        # The status poll answers at once and reads the new frame's tag in
+        # the background (199c831), so the turn lands a poll or two later.
+        turn = None
+        for _ in range(10):
+            turn = api("/api/state").get("liveTurn")
+            if turn == 270:
+                break
+            time.sleep(0.5)
+        check("the page is told how far to turn the live view", turn == 270, str(turn))
     finally:
         api("/api/session", {"date": was or ""}, timeout=30)
         shutil.rmtree(sd, ignore_errors=True)
@@ -3530,7 +3576,10 @@ def webcam_fails_fast_and_is_not_turned():
     # the last photo, and in real use that photo was hours old: he had turned
     # the camera back to landscape and the call arrived sideways. Reverted at
     # his request on 2026-09-22; he rotates in OBS if he needs to.
-    sh = open(os.path.expanduser("~/bin/z8-webcam.sh"), encoding="utf-8").read()
+    # The deployed copy if this machine has one (the desktop), else the repo's.
+    _sh = os.path.expanduser("~/bin/z8-webcam.sh")
+    sh = open(_sh if os.path.isfile(_sh) else os.path.join(HERE, "z8-webcam.sh"),
+              encoding="utf-8").read()
     srv = rust_source()
     check("the feed is never turned by the app",
           "Z8_TURN" not in sh and "Z8_TURN" not in srv
@@ -3877,12 +3926,14 @@ def a_portrait_frame_comes_out_upright():
     """
     print("\nportrait frames")
     src = rust_source()
-    # Two sanctioned routes, both reading the tag of the file on disk: the
-    # loader, and the raw tile's embedded JPEG (which carries no tag itself).
+    # Three sanctioned routes, all reading the tag of the file on disk: the
+    # loader, the raw tile's embedded JPEG (which carries no tag itself), and
+    # the strip tile from a JPEG's MPF preview (the tag from the file's head).
     check("the orientation tag is applied only where a file is loaded",
-          src.count("img::apply_orientation(") == 2
+          src.count("img::apply_orientation(") == 3
           and "img::apply_orientation(" in rust_fn("open_upright", src)
-          and "img::apply_orientation(" in rust_fn("raw_embedded", src))
+          and "img::apply_orientation(" in rust_fn("raw_embedded", src)
+          and "img::apply_orientation(" in rust_fn("mpf_preview", src))
     body = rust_fn("load_editable", src)
     check("every image the loader returns goes through it",
           body.count("open_upright(") >= 3 and "Ok(" not in body,
@@ -4451,8 +4502,13 @@ def ranking_measures_the_face_not_the_hair():
               all(good[i]["penalty"] <= good[i + 1]["penalty"]
                   for i in range(len(good) - 1)),
               "sorted")
-        check("the best frame carries no fault",
-              not good[0].get("faults"), ", ".join(good[0].get("faults") or []))
+        # "soft" is relative to the best frame, so the best can never be soft:
+        # that is the code. Light and exposure faults belong to the photos
+        # (couch test frames with no catchlight, 2026-10-25), so they are
+        # reported, not failed.
+        f0 = good[0].get("faults") or []
+        check("the best frame is not called soft", "soft" not in f0,
+              ", ".join(f0) or "no faults")
         check("faults are named in words, not a score",
               all(isinstance(x.get("faults"), list) for x in good))
         # Differential: a deliberately blurred frame must rank below its own
@@ -4973,7 +5029,7 @@ def lighting_report_is_measured():
     srcc = rust_source()
     body = rust_fn("lighting_report", srcc)
     check("it measures the CROP that will be exported, not the raw frame",
-          'apply_crop(im, b.get("crop"))' in rust_fn("measure", srcc))
+          'apply_crop(straighten((*base).clone(), deg), b.get("crop"))' in rust_fn("measure", srcc))
     check("too little skin falls back instead of inventing a number",
           "if n < 40 {" in body and "skin_only: false" in body)
     check("the thresholds are named constants or literals with reasons",
@@ -5215,7 +5271,7 @@ def a_setting_write_is_verified():
     check("the write is read back",
           "cfg.child(name).and_then(|n| n.value())" in fn)
     check("a mismatch is a FAILURE, not a success",
-          "Ok(v) if v.py_str() != value => (false," in fn)
+          "Ok(v) if !setting_matches(key, value, &v.py_str()) => (false," in fn)
     check("the refusal names what the camera actually kept",
           "stayed on {}" in fn)
     check("an unreadable value is not reported as a mismatch",
@@ -7582,7 +7638,7 @@ def main():
             seen.append(j.get("done"))
             if j.get("state") != "running":
                 break
-            time.sleep(0.2)
+            time.sleep(0.05)
         check("progress is visible while it runs", len(set(seen)) > 2,
               f"{len(set(seen))} distinct counts")
         check("every frame rendered, none failed",
@@ -7922,7 +7978,10 @@ def main():
     # A skip is fine when it is ABOUT the camera or the hardware around it.
     # Anything else is a section quietly not running.
     HARDWARE = ("camera", "--no-camera", "chrome", "exiftool", "no frames",
-                "no PIL", "already at", "no z8-launcher", "no README")
+                "no PIL", "already at", "no z8-launcher", "no README",
+                "wsl2", "cannot claim the camera",
+                # no microphone stack (WSL2 has no PipeWire): hardware too
+                "no input to record from")
     unexpected = [f"{n}: {w}" for n, w in SKIP
                   if n not in ALLOWED_SKIPS and w != RETIRED
                   and not any(h in str(w).lower() for h in
