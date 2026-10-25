@@ -1,0 +1,43 @@
+{
+ "_about": "Outdoor portrait starting points for the Z8, merged into camera-presets.json by tools/ready.sh --install-presets. Aperture priority with Auto ISO OFF (set on the camera): the camera picks the shutter, the ISO stays where it is put. 'Outdoor sun' holds back a third of a stop because skin and sky clip first in direct sun. In A mode watch the shutter speed the page shows: slower than 1/125 s on a person, raise the ISO.",
+ "Outdoor sun": {
+  "values": {
+   "expprogram": "A",
+   "quality": "NEF+Fine*",
+   "iso": "64",
+   "aperture": "f/4",
+   "whitebalance": "Daylight",
+   "exposurecomp": "-0.333"
+  }
+ },
+ "Outdoor shade": {
+  "values": {
+   "expprogram": "A",
+   "quality": "NEF+Fine*",
+   "iso": "400",
+   "aperture": "f/4",
+   "whitebalance": "Shade",
+   "exposurecomp": "0"
+  }
+ },
+ "Outdoor overcast": {
+  "values": {
+   "expprogram": "A",
+   "quality": "NEF+Fine*",
+   "iso": "200",
+   "aperture": "f/4",
+   "whitebalance": "Cloudy",
+   "exposurecomp": "0"
+  }
+ },
+ "Golden hour": {
+  "values": {
+   "expprogram": "A",
+   "quality": "NEF+Fine*",
+   "iso": "400",
+   "aperture": "f/4",
+   "whitebalance": "Daylight",
+   "exposurecomp": "-0.333"
+  }
+ }
+}

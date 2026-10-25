@@ -102,6 +102,18 @@ the laptop. On a pay-per-GB hotspot:
   turn on **Metered connection**. Windows Update and most OneDrive syncing
   then pause.
 - Photos are saved in WSL (`~/Pictures/z8-studio`), not in OneDrive.
+- Measured with Claude Code: about 10-40 KB per message. Each image Claude
+  looks at is sent again with every later message in that conversation; a
+  92 KB image added 70-100 KB to each one. Let Claude look through
+  `tools/peek.sh`, which makes 20-30 KB previews, and start a new
+  conversation after a batch of reviews. `tools/data-meter.sh start`, then
+  `tools/data-meter.sh`, shows how much WSL has used on the hotspot.
+
+## Before you leave, and after
+
+    tools/ready.sh                    # camera, batteries, disk, hotspot, phone link
+    tools/ready.sh --install-presets  # once: Outdoor sun / shade / overcast, Golden hour
+    tools/backup.sh                   # after the shoot: copy to the USB SSD and verify
 
 ## Measured (2026-10-25, ROG Flow X13, usbip at 480 Mbps)
 
