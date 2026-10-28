@@ -1083,7 +1083,9 @@ fn an_undeveloped_raw_tiles_from_its_embedded_jpeg() {
     let t = Instant::now();
     let im = load::raw_embedded(&nef, None).expect("a Z8 NEF carries a full-size JPEG");
     let dt = t.elapsed();
-    assert!(im.w > 4000 && im.w > im.h, "{}x{}", im.w, im.h);
+    // Full size, whichever way the camera was held: the newest real NEF
+    // may be a portrait frame, 5504x8256.
+    assert!(im.w.max(im.h) > 8000 && im.w.min(im.h) > 5000, "{}x{}", im.w, im.h);
     // The claim is "no develop", so assert that directly; the clock only
     // guards against a gross regression (a develop is ~4.7 s, and this ran
     // 0.29 s alone but once took over 2 s beside a parallel darktable run).
